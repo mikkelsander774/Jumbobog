@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Mikkels Jumbobog samling</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #e8c547; --bg: #0d0d1a; --surface: #111127; --surface2: #1a1a2e;
+      --text: #f0f0f0; --muted: #888; --dim: #555;
+      --green: #4caf50; --red: #c0392b; --green-bg: #0a2a0a; --red-bg: #2a0a0a;
+      --orange: #e67e22; --orange-bg: #2a1500;
+    }
+    body { background:var(--bg); color:var(--text); font-family:'Courier New',monospace; min-height:100vh; padding-bottom:40px; background-size:cover; background-position:center; background-attachment:fixed; background-repeat:no-repeat; }
+    .body { position:relative; z-index:1; }
+
+    #app-wrapper { max-width:1400px; margin:0 auto; background:var(--bg); min-height:100vh; box-shadow:0 0 60px rgba(0,0,0,0.9); }
+
+    #loadingOverlay { position:fixed; inset:0; background:var(--bg); z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+    #loadingOverlay.hidden { display:none; }
+    .spinner { width:40px; height:40px; border:3px solid #333; border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loadingOverlay p { color:var(--muted); font-size:12px; letter-spacing:2px; }
+
+    header { background:var(--surface); border-bottom:2px solid var(--gold); padding:16px 16px 0; position:sticky; top:0; z-index:100; }
+    header h1 { color:var(--gold); font-size:18px; letter-spacing:2px; font-weight:700; }
+    header p { color:var(--dim); font-size:10px; letter-spacing:2px; margin-top:2px; margin-bottom:12px; }
+    .tabs { display:flex; overflow-x:auto; }
+    .tab { padding:8px 14px; background:transparent; color:var(--muted); border:none; cursor:pointer; font-family:'Courier New',monospace; font-weight:700; font-size:11px; letter-spacing:1px; white-space:nowrap; flex-shrink:0; transition:background 0.15s,color 0.15s; }
+    .tab.active { background:var(--gold); color:var(--bg); }
+
+    .body { padding:8px; max-width:1400px; margin:0 auto; background:var(--bg); min-height:calc(100vh - 90px); }
+    .view { display:none; }
+    .view.active { display:block; }
+
+    .field label { color:var(--muted); font-size:11px; letter-spacing:2px; display:block; margin-bottom:6px; }
+    input[type="text"],input[type="number"],input[type="password"] { background:var(--surface); border:1px solid #333; border-radius:3px; color:var(--text); font-family:'Courier New',monospace; font-size:15px; padding:9px 12px; width:100%; outline:none; transition:border-color 0.2s; }
+    input:focus { border-color:var(--gold); }
+
+    /* SØGNING */
+    .search-label { color:var(--muted); font-size:11px; letter-spacing:2px; display:block; margin-bottom:8px; margin-top:20px; }
+    #searchInput { background:var(--surface); border:2px solid #333; border-radius:3px; color:var(--gold); font-family:'Courier New',monospace; font-size:42px; font-weight:700; padding:14px 20px; width:100%; text-align:center; letter-spacing:4px; outline:none; transition:border-color 0.2s; }
+    #searchInput:focus { border-color:var(--gold); }
+    .result-box { border-radius:6px; padding:20px; text-align:center; margin-top:16px; animation:fadeIn 0.25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
+    .result-box.found { background:var(--green-bg); border:2px solid var(--green); }
+    .result-box.not-found { background:var(--red-bg); border:2px solid var(--red); }
+    .result-emoji { font-size:44px; }
+    .result-title { font-size:20px; font-weight:700; margin-top:8px; }
+    .result-box.found .result-title { color:var(--green); }
+    .result-box.not-found .result-title { color:var(--red); }
+    .result-sub { color:var(--muted); margin-top:6px; font-size:13px; }
+    .result-img { margin-top:10px; max-height:140px; border-radius:4px; }
+    .dupli-badge { display:inline-block; background:var(--orange); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; margin-top:6px; }
+
+    /* TILSTAND */
+    .condition-row { display:flex; gap:6px; }
+    .cond-btn { flex:1; padding:8px 4px; background:var(--surface2); border:1px solid #333; border-radius:3px; color:var(--muted); font-family:'Courier New',monospace; font-size:10px; cursor:pointer; text-align:center; transition:all 0.15s; line-height:1.4; }
+    .cond-btn.active.c1 { border-color:var(--red); color:var(--red); background:var(--red-bg); }
+    .cond-btn.active.c2 { border-color:var(--orange); color:var(--orange); background:var(--orange-bg); }
+    .cond-btn.active.c3 { border-color:#c8b400; color:#c8b400; background:#1e1a00; }
+    .cond-btn.active.c4 { border-color:#7cb342; color:#7cb342; background:#0d1f00; }
+    .cond-btn.active.c5 { border-color:var(--green); color:var(--green); background:var(--green-bg); }
+    .cond-num { font-size:16px; font-weight:700; }
+    .cond-label { font-size:9px; letter-spacing:1px; }
+
+    /* FORM */
+    .form { display:flex; flex-direction:column; gap:14px; margin-top:20px; }
+    .quick-add { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:14px; }
+    .quick-add h3 { color:var(--gold); font-size:11px; letter-spacing:2px; margin-bottom:10px; }
+    .num-row { display:flex; gap:8px; align-items:flex-end; }
+    .count-ctrl { display:flex; align-items:center; gap:10px; }
+    .count-btn { background:var(--surface2); border:1px solid var(--gold); color:var(--gold); width:34px; height:34px; border-radius:3px; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .count-val { color:var(--gold); font-size:22px; font-weight:700; min-width:30px; text-align:center; }
+    .img-section h3 { color:var(--muted); font-size:11px; letter-spacing:2px; margin-bottom:10px; }
+    .img-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .upload-box { border:2px dashed #333; border-radius:4px; padding:10px 6px; text-align:center; cursor:pointer; color:var(--dim); font-size:18px; transition:border-color 0.2s,background 0.2s; position:relative; min-height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; }
+    .upload-box:hover { border-color:var(--gold); }
+    .upload-box.has-image { border-color:var(--gold); background:var(--surface2); }
+    .upload-box.uploading { border-color:var(--muted); }
+    .upload-box img { max-height:90px; max-width:100%; border-radius:3px; object-fit:cover; }
+    .upload-box input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-label { text-align:center; font-size:10px; color:var(--muted); margin-top:4px; letter-spacing:1px; }
+    .compress-info { font-size:9px; color:var(--dim); margin-top:2px; }
+
+    .btn { background:var(--gold); color:var(--bg); border:none; border-radius:3px; padding:11px 20px; font-family:'Courier New',monospace; font-weight:700; font-size:13px; cursor:pointer; letter-spacing:1px; width:100%; transition:opacity 0.15s; }
+    .btn:hover { opacity:0.85; }
+    .btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .btn-quick { padding:9px 16px; font-size:12px; width:auto; white-space:nowrap; }
+    .save-msg { text-align:center; font-weight:700; font-size:13px; min-height:18px; }
+    .save-msg.ok { color:var(--green); }
+    .save-msg.err { color:var(--red); }
+
+    /* PROGRESS */
+    .progress-wrap { margin-top:6px; display:none; }
+    .progress-wrap.active { display:block; }
+    .progress-bar { background:#222; border-radius:4px; height:5px; }
+    .progress-fill { background:var(--gold); height:100%; border-radius:4px; transition:width 0.2s; }
+    .progress-text { color:var(--muted); font-size:10px; margin-top:3px; text-align:center; letter-spacing:1px; }
+
+    /* SAMLING */
+    .filter-row { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .filter-btn { background:transparent; border:1px solid #333; color:var(--muted); border-radius:20px; padding:4px 12px; font-family:'Courier New',monospace; font-size:11px; cursor:pointer; transition:all 0.15s; }
+    .filter-btn.active { background:var(--gold); color:var(--bg); border-color:var(--gold); }
+    .collection-info { color:var(--muted); font-size:11px; letter-spacing:1px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .refresh-btn { background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px; }
+    .refresh-btn:hover { color:var(--gold); }
+    .collection-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+    .book-card { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:5px; position:relative; min-width:0; }
+    .book-card.has-images { border-color:var(--gold); cursor:pointer; }
+    .book-card.has-images:hover { background:#1e1e38; }
+    .book-card.dupli { border-color:var(--orange); }
+    .book-card.cond1 { border-color:var(--red) !important; }
+    .book-number { color:var(--gold); font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .book-title { color:var(--text); font-size:11px; margin-top:2px; line-height:1.3; word-break:break-word; }
+    .book-year { color:var(--muted); font-size:10px; margin-top:1px; }
+    .book-img { width:100%; border-radius:4px; object-fit:contain; background:#0d0d1a; max-height:160px; margin-top:6px; display:block; cursor:zoom-in; }
+    .flip-hint { text-align:center; color:var(--dim); font-size:10px; margin-top:3px; }
+    .card-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+    .badge { font-size:10px; font-weight:700; padding:1px 7px; border-radius:8px; }
+    .badge.dupli { background:var(--orange); color:#fff; }
+    .badge.incomplete { background:#2a2a2a; color:var(--muted); }
+    .badge.c1 { background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
+    .badge.c2 { background:var(--orange-bg); color:var(--orange); border:1px solid var(--orange); }
+    .badge.c3 { background:#1e1a00; color:#c8b400; border:1px solid #c8b400; }
+    .badge.c4 { background:#0d1f00; color:#7cb342; border:1px solid #7cb342; }
+    .badge.c5 { background:var(--green-bg); color:var(--green); border:1px solid var(--green); }
+    .delete-btn { position:absolute; top:6px; right:6px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:13px; padding:2px 4px; }
+    .delete-btn:hover { color:var(--red); }
+    .edit-btn { position:absolute; top:6px; right:26px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:13px; padding:2px 4px; }
+    .edit-btn:hover { color:var(--gold); }
+    .empty-msg { color:var(--dim); text-align:center; margin-top:36px; font-size:13px; grid-column:span 2; }
+
+    /* MANGLER */
+    .missing-info { color:var(--muted); font-size:12px; margin-top:16px; margin-bottom:8px; line-height:1.7; }
+    .missing-legend { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+    .legend-dot { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+    .missing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .missing-num { border-radius:3px; text-align:center; padding:8px 4px; font-size:12px; font-weight:700; }
+    .missing-num.absent { background:var(--red-bg); border:1px solid var(--red); color:var(--red); }
+    .missing-num.replace { background:var(--orange-bg); border:1px solid var(--orange); color:var(--orange); }
+
+    /* MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:200; overflow-y:auto; padding:20px 16px; }
+    .modal-overlay.open { display:block; }
+    .modal { background:var(--surface); border:1px solid var(--gold); border-radius:6px; padding:20px; max-width:480px; margin:0 auto; }
+    .modal h2 { color:var(--gold); font-size:15px; letter-spacing:2px; margin-bottom:16px; }
+    .modal-form { display:flex; flex-direction:column; gap:14px; }
+    .modal-btns { display:flex; gap:8px; }
+    .btn-cancel { background:transparent; color:var(--muted); border:1px solid #333; border-radius:3px; padding:10px 16px; font-family:'Courier New',monospace; font-weight:700; font-size:12px; cursor:pointer; flex:1; }
+    .btn-save { flex:2; }
+
+    /* VÆRKTØJ */
+    .tools-list { display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+    .section-title { color:var(--muted); font-size:11px; letter-spacing:2px; margin-top:10px; margin-bottom:2px; }
+    .btn-sm { background:transparent; color:var(--gold); border:1px solid var(--gold); border-radius:3px; padding:11px 16px; font-family:'Courier New',monospace; font-size:12px; font-weight:700; cursor:pointer; letter-spacing:1px; width:100%; text-align:center; transition:background 0.15s,color 0.15s; display:block; }
+    .btn-sm:hover { background:var(--gold); color:var(--bg); }
+    .btn-danger { border-color:var(--red); color:var(--red); }
+    .btn-danger:hover { background:var(--red); color:#fff; }
+    .max-row { display:flex; gap:8px; align-items:flex-end; }
+    .max-row input { flex:1; }
+    .max-row .btn { width:auto; padding:9px 16px; font-size:12px; }
+    .info-box { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:12px; font-size:11px; color:var(--muted); line-height:1.7; }
+
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+
+    @media (min-width:600px) { .collection-grid { grid-template-columns:repeat(3,1fr); } }
+    @media (min-width:900px) { .collection-grid { grid-template-columns:repeat(4,1fr); } }
+    @media (min-width:1200px) { .collection-grid { grid-template-columns:repeat(5,1fr); } }
+    @media (min-width:1400px) { .collection-grid { grid-template-columns:repeat(6,1fr); } }
+    @media (min-width:600px) { .missing-grid { grid-template-columns:repeat(6,1fr); } }
+    @media (min-width:900px) { .missing-grid { grid-template-columns:repeat(8,1fr); } }
+    @media (min-width:1200px) { .missing-grid { grid-template-columns:repeat(10,1fr); } }
+
+    @media (min-width:768px) {
+      #searchInput { font-size:36px; }
+      .result-box { max-width:500px; margin:0 auto; }
+      .modal { max-width:600px; }
+      header h1 { font-size:22px; }
+      header p { font-size:12px; }
+      .tab { font-size:13px; padding:10px 20px; }
+      .field-wrap { max-width:600px; margin:0 auto; }
+    }
+
+    /* ROTÉR KNAP */
+    .rotate-btn { background:none; border:none; color:var(--dim); font-size:14px; cursor:pointer; padding:0 2px; line-height:1; vertical-align:middle; transition:color 0.15s; }
+    .rotate-btn:hover { color:var(--gold); }
+    /* LIGHTBOX */
+    #lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; }
+    #lightbox.open { display:flex; }
+    #lightbox-close { position:fixed; top:16px; right:20px; color:#fff; font-size:32px; cursor:pointer; line-height:1; z-index:10000; }
+
+    @media (min-width:600px) { .book-img { max-height:220px; } }
+    @media (min-width:900px) { .book-img { max-height:200px; } }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingText">HENTER SAMLING...</p>
+</div>
+
+<div id="app-wrapper">
+
+<header>
+  <h1>Mikkels Jumbobog samling</h1>
+  <p id="bookCount">BOGSAMLING · INDLÆSER...</p>
+  <div class="tabs">
+    <button class="tab active" onclick="switchView('collection',this)">📚 SAMLING</button>
+    <button class="tab" onclick="switchView('add',this)">+ TILFØJ</button>
+    <button class="tab" onclick="switchView('missing',this)">❓ MANGLER</button>
+    <button class="tab" onclick="switchView('tools',this)">⚙ VÆRKTØJ</button>
+  </div>
+</header>
+
+<div class="body">
+
+  <!-- SAMLING -->
+  <div class="view active" id="view-collection">
+    <div style="margin-top:16px;">
+      <label class="search-label" style="margin-top:0;">SØG EFTER BOGNUMMER</label>
+      <input id="searchInput" type="number" placeholder="Jumbobog nr. xxx" oninput="doSearch(this.value)" style="background:var(--surface);border:2px solid #333;border-radius:3px;color:var(--gold);font-family:'Courier New',monospace;font-size:36px;font-weight:700;padding:12px 16px;width:100%;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;margin-bottom:4px;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" />
+      <div id="searchResult" style="margin-bottom:12px;"></div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setFilter('replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setFilter('incomplete',this)">INGEN BILLEDER</button>
+      </div>
+      <div class="collection-info">
+        <span id="collectionInfo">INDLÆSER...</span>
+        <button class="refresh-btn" onclick="loadBooks(true)" title="Opdater">↻</button>
+      </div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </div>
+  </div>
+
+  <!-- TILFØJ -->
+  <div class="view" id="view-add">
+    <div class="form">
+      <div class="quick-add">
+        <h3>⚡ HURTIG TILFØJ (KUN NUMMER)</h3>
+        <div class="num-row">
+          <div class="field" style="flex:1;">
+            <input type="number" id="quickNumber" placeholder="f.eks. 42" />
+          </div>
+          <div>
+            <div class="count-ctrl">
+              <button class="count-btn" onclick="changeQuickCount(-1)">−</button>
+              <span class="count-val" id="quickCountVal">1</span>
+              <button class="count-btn" onclick="changeQuickCount(1)">+</button>
+            </div>
+          </div>
+          <button class="btn btn-quick" id="quickAddBtn" onclick="quickAdd()">TILFØJ</button>
+        </div>
+        <div style="color:var(--dim);font-size:10px;margin-top:8px;letter-spacing:1px;">Titel, billeder og detaljer kan tilføjes senere via ✏ i samlingen</div>
+      </div>
+
+      <div style="border-top:1px solid #222;padding-top:14px;">
+        <div style="color:var(--muted);font-size:11px;letter-spacing:2px;margin-bottom:12px;">TILFØJ MED DETALJER</div>
+
+        <div class="field">
+          <label>BOGNUMMER *</label>
+          <input type="number" id="addNumber" placeholder="f.eks. 42" />
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>ÅR / UDGAVE</label>
+          <input type="text" id="addYear" placeholder="f.eks. 1987" />
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>TILSTAND</label>
+          <div class="condition-row" id="addCondRow">
+            <button class="cond-btn c1" onclick="setAddCond(1)"><div class="cond-num">1</div><div class="cond-label">UDSKIFT</div></button>
+            <button class="cond-btn c2" onclick="setAddCond(2)"><div class="cond-num">2</div><div class="cond-label">DÅRLIG</div></button>
+            <button class="cond-btn c3" onclick="setAddCond(3)"><div class="cond-num">3</div><div class="cond-label">RIMELIG</div></button>
+            <button class="cond-btn c4" onclick="setAddCond(4)"><div class="cond-num">4</div><div class="cond-label">GOD</div></button>
+            <button class="cond-btn c5" onclick="setAddCond(5)"><div class="cond-num">5</div><div class="cond-label">PERFEKT</div></button>
+          </div>
+        </div>
+        <div class="img-section" style="margin-top:12px;">
+          <h3>BILLEDER — komprimeres automatisk til ~150KB</h3>
+          <div class="img-grid">
+            <div>
+              <div class="upload-box" id="frontBox">
+                <span id="frontPlaceholder">📷</span>
+                <img id="frontPreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'front')" />
+              </div>
+              <div class="upload-label">FORSIDE</div>
+            </div>
+            <div>
+              <div class="upload-box" id="spineBox">
+                <span id="spinePlaceholder">📷</span>
+                <img id="spinePreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'spine')" />
+              </div>
+              <div class="upload-label">RYG</div>
+            </div>
+            <div>
+              <div class="upload-box" id="backBox">
+                <span id="backPlaceholder">📷</span>
+                <img id="backPreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'back')" />
+              </div>
+              <div class="upload-label">BAGSIDE</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-wrap" id="addProgress">
+          <div class="progress-bar"><div class="progress-fill" id="addProgressFill"></div></div>
+          <div class="progress-text" id="addProgressText">UPLOADER...</div>
+        </div>
+        <button class="btn" id="addBtn" style="margin-top:14px;" onclick="addBook()">TILFØJ BOG</button>
+        <div class="save-msg" id="saveMsg" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="border-top:1px solid #222;padding-top:14px;">
+        <div style="color:var(--muted);font-size:11px;letter-spacing:2px;margin-bottom:6px;">📋 MASSETILFØJ</div>
+        <div style="color:var(--dim);font-size:11px;margin-bottom:8px;">Skriv numre adskilt med komma. Brug bindestreg for intervaller og + for "og opefter".<br>Eks: <span style="color:var(--gold);">1, 3-5, 12, 20+</span></div>
+        <textarea id="bulkInput" placeholder="f.eks. 93, 324, 331-333, 545+" style="background:var(--surface);border:1px solid #333;border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:10px 12px;width:100%;outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" oninput="previewBulk()"></textarea>
+        <div id="bulkPreview" style="color:var(--muted);font-size:11px;min-height:16px;margin-top:4px;"></div>
+        <button class="btn" style="margin-top:8px;" id="bulkAddBtn" onclick="bulkAdd()">TILFØJ ALLE</button>
+        <div class="save-msg" id="bulkMsg" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAMLING -->
+  <div class="view" id="view-collection">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setFilter('dupli',this)">DUBLETTER</button>
+        <button class="filter-btn" onclick="setFilter('replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setFilter('incomplete',this)">INGEN BILLEDER</button>
+      </div>
+      <div class="collection-info">
+        <span id="collectionInfo">INDLÆSER...</span>
+        <button class="refresh-btn" onclick="loadBooks(true)" title="Opdater">↻</button>
+      </div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </div>
+  </div>
+
+  <!-- MANGLER -->
+  <div class="view" id="view-missing">
+    <div class="missing-info" id="missingInfo"></div>
+    <div class="missing-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>Mangler helt</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange);"></div>Ønskes udskiftet (tilstand 1)</div>
+    </div>
+    <div class="missing-grid" id="missingGrid"></div>
+  </div>
+
+  <!-- VÆRKTØJ -->
+  <div class="view" id="view-tools">
+    <div class="tools-list">
+      <div class="section-title">SAMLINGENS OMFANG</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Angiv det højeste Jumbobog-nummer der findes, så mangel-listen viser fra #1 til dette nummer.</div>
+      <div class="max-row">
+        <input type="number" id="maxBookInput" placeholder="f.eks. 500" />
+        <button class="btn" onclick="saveMaxBook()">GEM</button>
+      </div>
+      <div id="maxBookMsg" style="font-size:12px;min-height:16px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">TITLER</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Opdaterer titler på alle bøger i samlingen ud fra den indbyggede titelliste. Brug dette én gang hvis du allerede har bøger registreret.</div>
+      <button class="btn-sm" onclick="syncTitles()">🔤 OPDATER TITLER PÅ ALLE BØGER</button>
+      <div class="save-msg" id="syncMsg" style="margin-top:8px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">BACKUP & DATA</div>
+      <button class="btn-sm" onclick="exportData()">⬇ EKSPORTER SAMLING (.json)</button>
+      <label class="btn-sm" style="cursor:pointer;">
+        ⬆ IMPORTER SAMLING (.json)
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)" />
+      </label>
+
+      <div class="section-title" style="margin-top:16px;">BAGGRUNDSBILLEDE</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Vises som tapet bag appen. Indhold og knapper forbliver på sort baggrund.</div>
+      <label class="btn-sm" style="cursor:pointer;">
+        🖼 VÆLG BAGGRUNDSBILLEDE
+        <input type="file" accept="image/*" style="display:none;" onchange="setBgImage(event)" />
+      </label>
+      <button class="btn-sm" style="border-color:var(--dim);color:var(--muted);" onclick="clearBgImage()">✕ FJERN BAGGRUNDSBILLEDE</button>
+
+      <div class="section-title" style="margin-top:16px;color:var(--red);">FARLIGT OMRÅDE</div>
+      <button class="btn-sm btn-danger" onclick="clearAll()">🗑 SLET HELE SAMLINGEN</button>
+    </div>
+  </div>
+
+</div><!-- end .body -->
+</div><!-- end #app-wrapper -->
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal" onclick="maybeClose(event)">
+  <div class="modal">
+    <h2>✏ REDIGER BOG</h2>
+    <div class="modal-form">
+      <input type="hidden" id="editId" />
+      <div class="field">
+        <label>BOGNUMMER</label>
+        <input type="number" id="editNumber" readonly style="opacity:0.5;cursor:not-allowed;" />
+      </div>
+      <div class="field">
+        <label>ANTAL (DUBLETTER)</label>
+        <div class="count-ctrl">
+          <button class="count-btn" onclick="changeEditCount(-1)">−</button>
+          <span class="count-val" id="editCountVal">1</span>
+          <button class="count-btn" onclick="changeEditCount(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>ÅR / UDGAVE</label>
+        <input type="text" id="editYear" placeholder="f.eks. 1987" />
+      </div>
+      <div class="field">
+        <label>TILSTAND</label>
+        <div class="condition-row" id="editCondRow">
+          <button class="cond-btn c1" onclick="setEditCond(1)"><div class="cond-num">1</div><div class="cond-label">UDSKIFT</div></button>
+          <button class="cond-btn c2" onclick="setEditCond(2)"><div class="cond-num">2</div><div class="cond-label">DÅRLIG</div></button>
+          <button class="cond-btn c3" onclick="setEditCond(3)"><div class="cond-num">3</div><div class="cond-label">RIMELIG</div></button>
+          <button class="cond-btn c4" onclick="setEditCond(4)"><div class="cond-num">4</div><div class="cond-label">GOD</div></button>
+          <button class="cond-btn c5" onclick="setEditCond(5)"><div class="cond-num">5</div><div class="cond-label">PERFEKT</div></button>
+        </div>
+      </div>
+      <div class="img-section">
+        <h3>BILLEDER — komprimeres automatisk</h3>
+        <div class="img-grid">
+          <div>
+            <div class="upload-box" id="editFrontBox">
+              <span id="editFrontPh">📷</span>
+              <img id="editFrontPre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'front')" />
+            </div>
+            <div class="upload-label">FORSIDE</div>
+          </div>
+          <div>
+            <div class="upload-box" id="editSpineBox">
+              <span id="editSpinePh">📷</span>
+              <img id="editSpinePre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'spine')" />
+            </div>
+            <div class="upload-label">RYG</div>
+          </div>
+          <div>
+            <div class="upload-box" id="editBackBox">
+              <span id="editBackPh">📷</span>
+              <img id="editBackPre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'back')" />
+            </div>
+            <div class="upload-label">BAGSIDE</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress-wrap" id="editProgress">
+        <div class="progress-bar"><div class="progress-fill" id="editProgressFill"></div></div>
+        <div class="progress-text" id="editProgressText">UPLOADER...</div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="editCancelBtn" onclick="closeModal()">ANNULLER</button>
+        <button class="btn-sm btn-danger" id="editDeleteBtn" onclick="deleteFromModal()" style="width:auto;padding:11px 16px;">🗑 SLET</button>
+        <button class="btn btn-save" id="editSaveBtn" onclick="saveEdit()">GEM ÆNDRINGER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── SUPABASE ──────────────────────────────────────────────
+  const SUPABASE_URL = 'https://bfkmmyqjkgzymypgcikt.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const BUCKET = 'book-images';
+
+  // ── STATE ─────────────────────────────────────────────────
+  let books = [];
+  let bookGroups = {}; // number -> [book, book, ...]
+  let settings = { maxBook: null };
+  let addCount = 1, quickCount = 1, editCount = 1;
+  let addCond = null, editCond = null;
+  let addImages = { front: null, spine: null, back: null }; // File objects
+  let editImages = { front: null, spine: null, back: null }; // File objects or existing URLs
+  let editExistingUrls = { front: null, spine: null, back: null };
+  let cardView = {};
+  let collectionFilter = 'all';
+  const DELETE_PASSWORD = 'Squash12!';
+  const condLabels = { 1:'UDSKIFT', 2:'DÅRLIG', 3:'RIMELIG', 4:'GOD', 5:'PERFEKT' };
+
+  // ── JUMBOBOG TITLER (kilde: dansketegneserier.dk) ─────────
+  const JUMBO_TITLES = {
+1:"Onkel Joakims trillioner",2:"Onkel Joakim på skattejagt",3:"Anders And i knibe...",4:"Anders And i topform",5:"Onkel Joakim jorden rundt",
+6:"Anders And og Bjørne-banden",7:"Onkel Joakim i hopla",8:"Anders And klarer ærterne",9:"Pas på pengene onkel Joakim",10:"Anders And vover livet",
+11:"Kvikke Mickey",12:"Onkel Joakim redder æren",13:"Anders And - den frygtløse ridder",14:"Rip, Rap og Rup gi'r aldrig op",15:"Onkel Joakim i perlehumør",
+16:"Bange Bjørnebanditter",17:"Stakkels onkel Anders",18:"Anders And fægter sig frem",19:"Anders Ands ønskedrøm",20:"Onkel Joakims glæder og sorger",
+21:"Gavmilde onkel Joakim",22:"Mickey Mouse for fuld musik",23:"Anders And i centrum",24:"Du er en nar Anders And",25:"Mickey på sporet",
+26:"Anders Ands særeste historier",27:"Anders And står til søs",28:"Stålanden Anders",29:"Mickey som detektiv",30:"Anders And og alle vennerne",
+31:"Anders And på et hængende hår",32:"Anders And flyver i luften",33:"Pas på ryggen Sorteper",34:"Stålanden går i fælden!",35:"Spil op, Anders And!",
+36:"Verden rundt med Mickey Mouse",37:"Ikke næbbet, Anders",38:"Anders And kommer ovenpå",39:"På hat med Mickey Mouse",40:"Stålanden flyver igen!",
+41:"Anders And i søgelyset",42:"Onkel Joakim – hvis penge kunne tale!",43:"Onkel Joakim på nye jagtmarker",44:"Mickey Mouse på farten",45:"Stålanden slår til",
+46:"Anders And giver bolden op",47:"Mickey holder dampen oppe",48:"Anders And - dagens helt",49:"Listige Mickey",50:"Anders And går til filmen",
+51:"Onkel Joakim og lykkemønten",52:"Mickey Mouse i rummet",53:"Fantastiske Anders And",54:"Anders And maler byen rød",55:"Mickey sprænger rammerne",
+56:"Onkel Joakim fortæller",57:"Tillykke Anders",58:"En olympisk mester",59:"Onkel Joakim på dybt vand...",60:"Penge på højkant",
+61:"Fuld af narrestreger",62:"Stålanden vinder altid",63:"Hæng i, Anders!",64:"Så til søs Anders!",65:"Anders i fin stil",
+66:"Anders And, glade dage",67:"Anders And, årets bilist",68:"Anders på sangskole",69:"Anders som cowboy",70:"Pas på bjørnen Anders",
+71:"Onkel Joakim - fluernes herre",72:"Delfiner til leje",73:"Fiskedysten",74:"Onkel Joakim i indianerlejr",75:"Hvad nu, onkel Joakim?",
+76:"Onkel Joakim på glatis",77:"Anders And i modvind",78:"Anders And på eventyr",79:"Gi' den gas - Anders",80:"Onkel Joakim har rejsefeber",
+81:"Hjælp - det spøger!",82:"Onkel Joakim ved roret",83:"Tillykke unger!",84:"Tåge-fyrsten vender tilbage!",85:"Mickey Mouse opdager Amerika",
+86:"Stålandens kikkert",87:"Det ser sort ud!",88:"Fuldmåne-skyggen",89:"EM-væddemål",90:"Sikke en samling!",
+91:"Anders And i Seoul!",92:"Tillykke Mickey!",93:"Onkel Joakim kommer til kort!",94:"Små slag, Mickey!",95:"Langt ude, Anders!",
+96:"I lovens navn",97:"Onkel Joakim på vulkaner",98:"Tilbage til fortiden",99:"Hikkekuren",100:"Nr. 100",
+101:"Det store væddeløb",102:"Tarzand",103:"Den falske tyv",104:"- en nøgleroman!",105:"Fægtemesteren",
+106:"Stålanden på spanden",107:"Terror i pengetanken",108:"Tågesnak",109:"Varulven er løs...",110:"Haj Mickey!",
+111:"Indianda And",112:"Gal i skralden!",113:"Et spring af dimensioner!",114:"Drømmehulen",115:"Pengenød",
+116:"Det er fedt, Anders!",117:"Højt at flyve...",118:"Jagten på stjernehjulet",119:"Hold fast, Anders!",120:"Rivaler i Paris",
+121:"Jagten på - ingenting!",122:"Kom igen, onkel Joakim",123:"Hjerteknuseren",124:"Hold hovedet koldt, Anders",125:"Miljøhelten",
+126:"Forklædt som stjerne",127:"En rigtig rystetur!",128:"Krystal-magi",129:"Hvor er du, skat?",130:"I totterne på Højben",
+131:"En 1. klasses bandit",132:"Stålanden i aktion",133:"Vågn op, Anders!",134:"Godt gået, Anders",135:"Guld i sigte",
+136:"Ud at køre med de...",137:"Skattejagten",138:"Stjernetur",139:"Heldige Anders",140:"Anders på opdagelse",
+141:"Jeg, en over-and",142:"Mickey - min helt",143:"Jubilæumsnummer",144:"Fed fremtid",145:"Onkel Joakim punger ud",
+146:"Vind i sejlet",147:"Panik i pyramiden",148:"Tankeoverføring",149:"Onkel Joakim... på spring",150:"150",
+151:"Skatte-smæk",152:"Sure miner",153:"Gode forbindelser",154:"En slem krukke",155:"Vampyrens Hemmelighed",
+156:"Lille gartner, hvad nu?",157:"Operation Kaktus",158:"Onkel Joakim går i luften",159:"Stålanden i krise",160:"Den tapre landsoldat",
+161:"Verdens modigste and",162:"Sømmet i bund, Anders!",163:"Gravrøverne",164:"Storsvindlerne",165:"Høj guldfeber",
+166:"Anders i Hollywood",167:"Rejsen til Jordens indre",168:"Asteroidejagten",169:"Styr dig, Anders!",170:"Zarens kurér",
+171:"Anders slår tonen an...",172:"Mærk verden, Anders!",173:"Tyven fra Bagdad",174:"Anders Løveand",175:"175",
+176:"Guldstøv på hjernen",177:"Den mystiske planet",178:"Bjørnebanditternes gyldne badedage",179:"Den uheldige viking",180:"Fremtidsbogen",
+181:"Kampen på Olympen",182:"Fortiden tur/retur",183:"Kuk i tyngdekraften",184:"Jorden rundt på 80 måder",185:"Døren til nye verdner",
+186:"Guld og gammelt jern",187:"Oraklets sendebud",188:"Al Crapyles skat",189:"To modige gringos",190:"Spøg til side",
+191:"Mareridt på Drømmeøen",192:"Præmiegrisen",193:"Jagten på sumpuhyret",194:"Ren nedtur",195:"Inka-skatten",
+196:"Hvem jager hvem?",197:"Kejser Joakim i knibe",198:"På et hængende hår",199:"Anders går til filmen",200:"200",
+201:"Panik i Tågedalen",202:"Mysteriet i spøgelsestoget",203:"Spilopmageren",204:"Panik i pengetanken",205:"For fuld skrue",
+206:"Den Magiske Tryllestav",207:"Den gale professor",208:"Det store opgør",209:"Iskold skattejagt",210:"De syv amuletter",
+211:"I løvens gab",212:"Anders And bryder isen",213:"Ren jammer",214:"Vulkanens hemmelighed",215:"Heksedoktorens hævn",
+216:"I windigos magt",217:"Alting går i fisk",218:"Onkel Joakim i skudlinien",219:"Ønskelyset",220:"5 x Anders",
+221:"Sandfurien",222:"Stålandens fødselsdag",223:"Det vilde ræs",224:"Kaos i kulden",225:"Flugten fra år 2000",
+226:"Mod nye mål",227:"Den Røde Pumpernickel",228:"Hjælp søges",229:"De magiske sten",230:"Flænserne fra det ydre rum",
+231:"Den næbbede papegøje",232:"Fodboldtosset",233:"Nærkontakt af anden grad",234:"Landet på den anden side",235:"Olympisk ballade",
+236:"Spøgelseshuset",237:"Jagten på den sølvskællede skarabæ",238:"Junglehelten",239:"I banditternes vold",240:"Istidsmissionen",
+241:"Den gådefulde maske",242:"Halløj på hotellet",243:"Den glemte dal",244:"Rablende gal",245:"Ulve-anden",
+246:"Blånæbs lykkemønt",247:"Kampen om marken",248:"Vilde Otto",249:"Jagten på den blå regn",250:"Mumien",
+251:"Tidsdøren",252:"Den store kriger",253:"På sporet af en myte",254:"Den store sensation",255:"Hemmelige agenter",
+256:"Ormehullet",257:"En hård kamp",258:"Roekrigen",259:"Landevejsrøveren",260:"En sikker vinder",
+261:"Det fjerde ønske",262:"Brændte fjer",263:"Den magiske salve",264:"Koks i karrusellen",265:"Nysekrigen",
+266:"På fallittens rand",267:"Uhyret fra Den Sorte Lagune",268:"Spøgelsesrotterne",269:"Den sorte kugle",270:"Ørkenvandringen",
+271:"Hav-anden",272:"Panik på Paradisæblevej",273:"Vildanden Anders",274:"Lykkebrillerne",275:"Kaptajn Sortskæg",
+276:"Den forsvundne stumfilm",277:"Kongernes sværd",278:"Mandarinen",279:"Magiens mester",280:"Fotokaos",
+281:"Lottomillionæren",282:"Helt til rotterne",283:"Vikinge-fejden",284:"Af banen!",285:"Anders den Glatte",
+286:"En sand helt",287:"Én på kassen",288:"Tyggegummikongen",289:"Den falske stemme",290:"Tålmodigheds-eksperten",
+291:"Bombizzen",292:"Lyttebøfferne",293:"Helt vildt",294:"Stjerner for en aften",295:"Sovetrynen",
+296:"Stjernestyrken",297:"Luftens helte",298:"Slughalsen",299:"Dobbeltgængeren",300:"300",
+301:"Ormeslottet",302:"Krystalklare drømme",303:"Farlig valuta",304:"Superblufferen",305:"Skatteopkræveren",
+306:"Skraldebøttetruslen",307:"Lykkebukserne",308:"Venskabsfesten!",309:"Kampen i sumpen",310:"Udekamp",
+311:"Skrumpegassen",312:"Forsvundet i paradis",313:"313",314:"Himmelsk rigdom",315:"Mysteriet i Flækkeby",
+316:"Mellem to hårde negle",317:"En skræmmende arv",318:"Dromedaren Kamelia",319:"Kørt helt ud i tovene",320:"Kort og brutal",
+321:"Den fødte leder",322:"Den forsvundne guldmine",323:"Tag dig nu sammen!",324:"Sørøverskatten",325:"Strandløven",
+326:"Turistfælden",327:"TV-shoppen",328:"Kong Anders",329:"Afsløret!",330:"Gravko-kaos",
+331:"Et uheldigt opgør",332:"Andland",333:"Helt elektrisk",334:"Pjækkesyg",335:"Alkymisten",
+336:"Opskriften på sejr",337:"Slaget om Andeby",338:"Fyr den af, Anders!",339:"Trange tider",340:"Møntens magt",
+341:"Farvesugeren",342:"Musen, anden og skønheden",343:"Tilbage til Bjørnebjerg",344:"Hurtige penge",345:"Stem på mig!",
+346:"En ulv efter pølser",347:"Sendt til tælling",348:"Kvik i pæren",349:"En festlig anledning",350:"Strandkaos",
+351:"SOS",352:"Ænder og dæmoner",353:"Agent dobbelt-A",354:"Krise? Hvilken krise?",355:"Robotrøvere",
+356:"Kommer Julemanden?",357:"Røveri i pengetanken",358:"Min første million",359:"Dræberbamserne",360:"Agent dobbelt-A slår til!",
+361:"Held... ...og uheld",362:"Mååååål!!",363:"Aaah... sommer!",364:"Sommer, sol og eventyr",365:"Fodbold, ferie og farlige ting",
+366:"Sommer på rov",367:"Sommer-sjov",368:"Heksehygge",369:"En god omgang",370:"Årets julegave",
+371:"Stål-andejagt",372:"Bjørnebanden tilbage",373:"Uhyret fra havets dyb",374:"Magisk forvandling",375:"Dobbelt gevær",
+376:"Skatten i skoven",377:"Arktisk eventyr",378:"Den fortryllede have",379:"Flugten fra den lukkede by",380:"Det store indbrud",
+381:"Onkel Joakims drøm",382:"Den gyldne nøgle",383:"Farlige efterretninger",384:"Monsternissen",385:"Superheltene",
+386:"Guldfeber igen",387:"Alt for mange penge",388:"Pengekisten",389:"Drømmenes dal",390:"Forbudt by",
+391:"Den røde diamant",392:"Kaos på krydstogt",393:"Spøgelsesskibet",394:"Ildmonsteret",395:"Ismonster",
+396:"Den forsvundne skat",397:"Julens trolddom",398:"En drøm af en jul",399:"Vinterferie",400:"400",
+401:"Bjørne-banden på rov",402:"Sommerferie",403:"Sommerglæder",404:"Sommerdrøm",405:"Lykkemønten",
+406:"Galaktisk omvej",407:"En uventet rejse",408:"Kom bare ind!",409:"Troldenes konge",410:"Stålanden i sigte",
+411:"Sommermagi",412:"Sommer og sejr",413:"En varm sommer",414:"Sol og sjov",415:"Heksen i skoven",
+416:"Den mystiske ø",417:"Arv og gæld",418:"Kampen om guldet",419:"Vintereventyr",420:"Årets julebog",
+421:"Julens magi",422:"Vinter og varme",423:"Snestorm i Andeby",424:"Tidernes løb",425:"Den hemmelige klub",
+426:"Forbandelsens gave",427:"Fodbolddrøm",428:"Sommer i Andeby",429:"Stor sommer",430:"Superanden",
+431:"Det store eventyr",432:"Kraftfuld magi",433:"Forbandede skatte",434:"Mysteriet om den forsvundne and",435:"Varm sommer",
+436:"En rigtig sommer",437:"Sommer på eventyr",438:"Anders And i centrum",439:"Onkel Joakims testamente",440:"Julestjerne",
+441:"Juleæventyr",442:"Vinterfantasi",443:"Iskolde eventyr",444:"Ny start",445:"Ny sæson",
+446:"Andeby genåbner",447:"Slut med det!",448:"Andeby-mysteriet",449:"Den store nedtur",450:"Jubilæum",
+451:"Privatdetektiv And",452:"Tidspiraterne",453:"Grillede ideer!",454:"Smil til kameraet!",455:"Badeænder",
+456:"På nye eventyr!",457:"Fyr og flamme",458:"Sommerfuglejagt",459:"Det store Andebyløb!",460:"Guld og glæde",
+461:"Nye horisonter",462:"Forårsfornøjelser",463:"Sommersjov",464:"Sæsonens bedste",465:"Hemmelige planer",
+466:"Farlige forbindelser",467:"Den store plan",468:"Hvad gemmer sig?",469:"Efterårseventyr",470:"Mørke hemmeligheder",
+471:"Vinterens komme",472:"Julebogen",473:"Frisk start",474:"Forårstegn",475:"Sommerens begyndelse",
+476:"Sol og vand",477:"Sommer, sommer!",478:"Hede dage",479:"Sommerafslutning",480:"Farverig efterår",
+481:"Heksejagt",482:"Vintervagt",483:"Julemagi",484:"Godt nytår",485:"Forårshåb",
+486:"Nye veje",487:"Sommerdage",488:"Solfyldte timer",489:"Det store ønske",490:"Eventyrlig sommer",
+491:"Efterårsblæst",492:"Hemmelig mission",493:"Julegave",494:"Nytårsaften",495:"Vinterlys",
+496:"Årets afslutning",497:"Forårsfest",498:"Sommer på vej",499:"Solskinsdag",500:"500",
+501:"Græske guder og gode råd",502:"Fodboldstjerner",503:"Olympiske håb",504:"Den skjulte ø",505:"Destination: Jordens indre",
+506:"Helte og mysterier",507:"Bjørne-banden 70 år",508:"Hexias barndom",509:"Stålmobilen",510:"På ski i Andeby",
+511:"Pengetankens hemmeligheder",512:"Vilde oplevelser",513:"Tidsportalen",514:"Sommerhelte",515:"Drømmeland",
+516:"Ved havet!",517:"En verdensomsejling under vand",518:"Skurkejagt",519:"Anders ass. træner",520:"Gyldent jubilæum",
+521:"Held i uheld",522:"Hvor er sneen?",523:"Eventyr i junglen",524:"Stålandens hemmelighed",525:"Grillmesteren fra Andeby",
+526:"Det gamle tempels hemmelighed",527:"Sommerdrømme",528:"Ferieminder",529:"Stålanden og Fabuland ser dobbelt!",530:"På jagt efter lykkemønten",
+531:"Spøgende spøgelser",532:"Mesterskurken",533:"Mysteriet på slottet",534:"Det antikke isfort",535:"Guldtårnet",
+536:"Nautilus vender tilbage!",537:"Skildpaddeøerne",538:"Fodboldfeber!",539:"Strandfesten",540:"Sjov på stranden",
+541:"Den store e-sport-finale!",542:"Kampen om Mars!",543:"Den magiske bog",544:"Onkel Joakim og uendelighedsmønten",
+545:"Pist væk!",546:"Dinoer i Andeby",547:"Sandokand søfareren",548:"Fantastiske fantasilliarder",549:"Mission dobbeltspil!",550:"Hvad nu hvis",
+551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E"
+  };
+  function getTitle(num) { return JUMBO_TITLES[String(num)] || JUMBO_TITLES[num] || ''; }
+
+  // ── IMAGE COMPRESSION ─────────────────────────────────────
+  function compressImage(file, maxPx = 900, quality = 0.82) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxPx || height > maxPx) {
+            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else { width = Math.round(width * maxPx / height); height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadImage(file, bookNumber, side) {
+    const compressed = await compressImage(file);
+    const path = `${bookNumber}/${side}_${Date.now()}.jpg`;
+    const { data, error } = await sb.storage.from(BUCKET).upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+    if (error) throw error;
+    const { data: urlData } = sb.storage.from(BUCKET).getPublicUrl(path);
+    return urlData.publicUrl;
+  }
+
+  async function deleteImageByUrl(url) {
+    if (!url) return;
+    try {
+      const path = url.split(`/${BUCKET}/`)[1];
+      if (path) await sb.storage.from(BUCKET).remove([path]);
+    } catch {}
+  }
+
+  // ── INIT ──────────────────────────────────────────────────
+  async function init() {
+    setLoading(true, 'HENTER SAMLING...');
+    await loadSettings();
+    await loadBooks(false);
+    setLoading(false);
+  }
+
+  function setLoading(show, text = '') {
+    const el = document.getElementById('loadingOverlay');
+    if (show) {
+      el.classList.remove('hidden');
+      document.getElementById('loadingText').textContent = text;
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  // ── SETTINGS ──────────────────────────────────────────────
+  async function loadSettings() {
+    const { data } = await sb.from('settings').select('*').eq('key', 'maxBook').maybeSingle();
+    if (data) {
+      settings.maxBook = Number(data.value);
+      document.getElementById('maxBookInput').value = settings.maxBook;
+    }
+  }
+
+  async function saveMaxBook() {
+    const val = document.getElementById('maxBookInput').value.trim();
+    const n = Number(val);
+    const msg = document.getElementById('maxBookMsg');
+    if (!val || isNaN(n) || n < 1) { msg.style.color='var(--red)'; msg.textContent='Indtast et gyldigt nummer'; setTimeout(()=>msg.textContent='',2500); return; }
+    await sb.from('settings').upsert({ key: 'maxBook', value: String(n) });
+    settings.maxBook = n;
+    msg.style.color='var(--green)'; msg.textContent=`Gemt — mangler vises fra #1 til #${n} ✓`;
+    setTimeout(()=>msg.textContent='',3000);
+  }
+
+  // ── LOAD BOOKS ────────────────────────────────────────────
+  async function loadBooks(showSpinner = true) {
+    if (showSpinner) setLoading(true, 'HENTER SAMLING...');
+    const { data, error } = await sb.from('books').select('*').order('number', { ascending: true }).order('is_primary', { ascending: false }).order('id', { ascending: true });
+    if (error) { console.error(error); if(showSpinner) setLoading(false); return; }
+    books = data || [];
+    // Gruppér efter nummer
+    bookGroups = {};
+    for (const b of books) {
+      if (!bookGroups[b.number]) bookGroups[b.number] = [];
+      bookGroups[b.number].push(b);
+    }
+    // Sortér hver gruppe: højeste karakter først, derefter ældste år, derefter nyeste id
+    for (const num of Object.keys(bookGroups)) {
+      bookGroups[num].sort((a, b) => {
+        const ca = a.condition || 0, cb = b.condition || 0;
+        if (cb !== ca) return cb - ca;
+        const ya = parseInt(a.year) || 9999, yb = parseInt(b.year) || 9999;
+        if (ya !== yb) return ya - yb;
+        return b.id - a.id;
+      });
+    }
+    updateCount();
+    if (showSpinner) setLoading(false);
+    renderCollection();
+  }
+
+  function updateCount() {
+    const titles = Object.keys(bookGroups).length;
+    const total = books.length;
+    const dupli = total - titles;
+    let txt = `BOGSAMLING · ${titles} TITLER · ${total} BØGER`;
+    if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+    document.getElementById('bookCount').textContent = txt;
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────
+  function switchView(name, el) {
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    if (el) el.classList.add('active');
+    if (name==='collection') renderCollection();
+    if (name==='missing') renderMissing();
+  }
+
+  // ── SØGNING ───────────────────────────────────────────────
+  function doSearch(val) {
+    const res = document.getElementById('searchResult');
+    const num = val.trim();
+    if (!num) { res.innerHTML=''; return; }
+    const group = bookGroups[Number(num)];
+    if (group && group.length > 0) {
+      const book = group[0];
+      const yearHtml = book.year ? ` · ${book.year}` : '';
+      const titleHtml = book.title ? `<div style="color:var(--text);font-size:14px;margin-top:4px;">${book.title}</div>` : '';
+      const copiesHtml = group.map((b, i) => {
+        const imgSrc = b.front_image || b.spine_image || b.back_image;
+        const imgHtml = imgSrc ? `<img style="width:100%;border-radius:4px;object-fit:contain;background:#0d0d1a;max-height:180px;margin-top:6px;display:block;" src="${imgSrc}" />` : '<div style="height:80px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:11px;">INGEN BILLEDE</div>';
+        const condHtml = b.condition ? `<div style="margin-bottom:4px;">${condBadgeHtml(b.condition)}</div>` : '<div style="margin-bottom:4px;"><span class="badge" style="background:#222;color:var(--dim);">INGEN TILSTAND</span></div>';
+        const primaryHtml = b.is_primary ? `<div style="font-size:9px;color:var(--gold);margin-top:4px;">★ PRIMÆR</div>` : `<div style="font-size:9px;color:var(--dim);margin-top:4px;">Eksemplar ${i+1}</div>`;
+        return `<div style="flex:1;min-width:0;text-align:center;">${condHtml}${imgHtml}${primaryHtml}</div>`;
+      }).join('');
+      const copiesLabel = group.length > 1 ? `<div style="margin-bottom:8px;"><span class="dupli-badge">×${group.length} EKSEMPLARER</span></div>` : '';
+      res.innerHTML = `<div class="result-box found">
+        <div class="result-emoji">✅</div>
+        <div class="result-title">DU HAR DEN!</div>
+        <div class="result-sub">Jumbobog nr. ${book.number}${yearHtml}</div>
+        ${titleHtml}${copiesLabel}
+        <div style="display:flex;gap:8px;margin-top:8px;">${copiesHtml}</div>
+      </div>`;
+    } else {
+      const knownTitle = JUMBO_TITLES[String(num)] || JUMBO_TITLES[Number(num)] || "";
+      const titleHtml = knownTitle ? `<div style="color:var(--text);font-size:14px;margin-top:4px;">${knownTitle}</div>` : "";
+      res.innerHTML = `<div class="result-box not-found">
+        <div class="result-emoji">❌</div>
+        <div class="result-title">MANGLER!</div>
+        <div class="result-sub">Jumbobog nr. ${num} er ikke i din samling</div>
+        ${titleHtml}
+      </div>`;
+    }
+  }
+
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  async function rotateImage(bookId, imgKey, event) {
+    if (event) event.stopPropagation();
+    // Find bogen
+    const b = books.find(x => x.id === bookId);
+    if (!b || !b[imgKey]) return;
+    const src = b[imgKey];
+    // Find knappen og giv feedback
+    const btn = event ? event.target : null;
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    try {
+      // Hent og rotér billedet på canvas
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src.split('?')[0] + '?t=' + Date.now(); });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      // Konvertér til blob
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+      // Find sti og upload
+      const path = src.split('/' + BUCKET + '/')[1].split('?')[0];
+      const { error } = await sb.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (error) throw error;
+      // Opdatér URL i DB med cache-bust parameter (nyt timestamp)
+      const newUrl = src.split('?')[0] + '?t=' + Date.now();
+      await sb.from('books').update({ [imgKey]: newUrl }).eq('id', bookId);
+      // Genindlæs samlingen
+      await loadBooks(false);
+    } catch(e) {
+      showMsg('Fejl ved rotation: ' + e.message, 'err');
+      if (btn) { btn.textContent = '↻'; btn.disabled = false; }
+    }
+  }
+  function condBadgeHtml(c) {
+    if (!c) return '';
+    return `<span class="badge c${c}">${c} · ${condLabels[c]}</span>`;
+  }
+
+  // ── MASSETILFØJ ───────────────────────────────────────────
+  function parseBulk(input) {
+    const nums = new Set();
+    const maxNum = settings.maxBook || 999;
+    const parts = input.split(',');
+    for (let part of parts) {
+      part = part.trim();
+      if (!part) continue;
+      if (part.endsWith('+')) {
+        const start = parseInt(part);
+        if (!isNaN(start)) for (let n = start; n <= maxNum; n++) nums.add(n);
+      } else if (part.includes('-')) {
+        const [a, b] = part.split('-').map(s => parseInt(s.trim()));
+        if (!isNaN(a) && !isNaN(b)) for (let n = a; n <= b; n++) nums.add(n);
+      } else {
+        const n = parseInt(part);
+        if (!isNaN(n)) nums.add(n);
+      }
+    }
+    return [...nums].sort((a,b) => a-b);
+  }
+
+  function previewBulk() {
+    const input = document.getElementById('bulkInput').value;
+    const preview = document.getElementById('bulkPreview');
+    if (!input.trim()) { preview.textContent = ''; return; }
+    const nums = parseBulk(input);
+    const existing = new Set(books.map(b => b.number));
+    const newNums = nums.filter(n => !existing.has(n));
+    const skipNums = nums.filter(n => existing.has(n));
+    let txt = `${newNums.length} nye bøger tilføjes`;
+    if (skipNums.length) txt += ` · ${skipNums.length} findes allerede (springes over)`;
+    preview.textContent = txt;
+    preview.style.color = newNums.length > 0 ? 'var(--gold)' : 'var(--muted)';
+  }
+
+  async function bulkAdd() {
+    const input = document.getElementById('bulkInput').value;
+    if (!input.trim()) return;
+    const nums = parseBulk(input);
+    const existing = new Set(books.map(b => b.number));
+    const newNums = nums.filter(n => !existing.has(n));
+    if (!newNums.length) {
+      document.getElementById('bulkMsg').textContent = 'Alle bøger findes allerede!';
+      document.getElementById('bulkMsg').className = 'save-msg err';
+      setTimeout(() => document.getElementById('bulkMsg').textContent = '', 3000);
+      return;
+    }
+    const btn = document.getElementById('bulkAddBtn');
+    btn.disabled = true; btn.textContent = 'TILFØJER...';
+    const msg = document.getElementById('bulkMsg');
+    try {
+      const rows = newNums.map(n => ({ number: n, is_primary: true, title: getTitle(n), year: '', condition: null, front_image: null, spine_image: null, back_image: null }));
+      // Indsæt i batches af 50
+      for (let i = 0; i < rows.length; i += 50) {
+        const batch = rows.slice(i, i + 50);
+        const { error } = await sb.from('books').insert(batch);
+        if (error) throw error;
+        btn.textContent = `TILFØJER... ${Math.min(i+50, rows.length)}/${rows.length}`;
+      }
+      document.getElementById('bulkInput').value = '';
+      document.getElementById('bulkPreview').textContent = '';
+      msg.textContent = `✓ ${newNums.length} bøger tilføjet!`;
+      msg.className = 'save-msg ok';
+      await loadBooks(false);
+    } catch(e) {
+      msg.textContent = 'Fejl: ' + e.message;
+      msg.className = 'save-msg err';
+    } finally {
+      btn.disabled = false; btn.textContent = 'TILFØJ ALLE';
+      setTimeout(() => { msg.textContent = ''; msg.className = 'save-msg'; }, 4000);
+    }
+  }
+
+  // ── ANTAL & TILSTAND ──────────────────────────────────────
+  function changeCount(d) { addCount=Math.max(1,addCount+d); document.getElementById('countVal').textContent=addCount; }
+  function changeQuickCount(d) { quickCount=Math.max(1,quickCount+d); document.getElementById('quickCountVal').textContent=quickCount; }
+  function changeEditCount(d) { editCount=Math.max(1,editCount+d); document.getElementById('editCountVal').textContent=editCount; }
+
+  function setAddCond(v) {
+    addCond = addCond===v ? null : v;
+    document.querySelectorAll('#addCondRow .cond-btn').forEach((b,i)=>b.classList.toggle('active',addCond===i+1));
+  }
+  function setEditCond(v) {
+    editCond = editCond===v ? null : v;
+    document.querySelectorAll('#editCondRow .cond-btn').forEach((b,i)=>b.classList.toggle('active',editCond===i+1));
+  }
+
+  // ── BILLEDER (preview) ────────────────────────────────────
+  function handleImage(e, side) {
+    const file = e.target.files[0]; if (!file) return;
+    addImages[side] = file;
+    showPreview(side, file, false);
+  }
+
+  function handleEditImage(e, side) {
+    const file = e.target.files[0]; if (!file) return;
+    editImages[side] = file;
+    showPreview(side, file, true);
+  }
+
+  function showPreview(side, file, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const pre = document.getElementById(preId);
+      pre.src = e.target.result; pre.style.display='block';
+      document.getElementById(phId).style.display='none';
+      document.getElementById(boxId).classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function showUrlPreview(side, url, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    const pre = document.getElementById(preId);
+    pre.src = url; pre.style.display='block';
+    document.getElementById(phId).style.display='none';
+    document.getElementById(boxId).classList.add('has-image');
+  }
+
+  function clearPreview(side, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    document.getElementById(preId).style.display='none';
+    document.getElementById(phId).style.display='block';
+    document.getElementById(boxId).classList.remove('has-image');
+  }
+
+  // ── HURTIG TILFØJ ─────────────────────────────────────────
+  async function quickAdd() {
+    const num = document.getElementById('quickNumber').value.trim();
+    if (!num) return;
+    const btn = document.getElementById('quickAddBtn');
+    btn.disabled=true; btn.textContent='GEMMER...';
+    const { error } = await sb.from('books').insert({ number:Number(num), is_primary:false, title:getTitle(Number(num)), year:'', condition:null, front_image:null, spine_image:null, back_image:null });
+    btn.disabled=false; btn.textContent='TILFØJ';
+    if (error) { showMsg('Fejl: '+error.message,'err'); return; }
+    document.getElementById('quickNumber').value='';
+    quickCount=1; document.getElementById('quickCountVal').textContent=1;
+    showMsg(`#${String(num).padStart(3,'0')} tilføjet ✓`,'ok');
+    await loadBooks(false);
+  }
+
+  // ── TILFØJ MED DETALJER ───────────────────────────────────
+  async function addBook() {
+    const num = document.getElementById('addNumber').value.trim();
+    const title = getTitle(Number(num));
+    const year = document.getElementById('addYear').value.trim();
+    if (!num) { showMsg('Indtast et bognummer!','err'); return; }
+
+    const btn = document.getElementById('addBtn');
+    btn.disabled=true; btn.textContent='GEMMER...';
+    const progress = document.getElementById('addProgress');
+    progress.classList.add('active');
+
+    try {
+      const urls = { front_image: null, spine_image: null, back_image: null };
+      const sides = [['front','front_image'],['spine','spine_image'],['back','back_image']];
+      let done = 0;
+      for (const [side, key] of sides) {
+        if (addImages[side]) {
+          setProgress('add', done/3*100, `UPLOADER ${side.toUpperCase()}BILLEDE...`);
+          urls[key] = await uploadImage(addImages[side], num, side);
+        }
+        done++;
+        setProgress('add', done/3*100, done===3 ? 'GEMMER...' : `UPLOADER...`);
+      }
+
+      const { error } = await sb.from('books').insert({ number:Number(num), is_primary:false, count:1, title, year, condition:addCond, ...urls });
+      if (error) throw error;
+
+      // reset
+      document.getElementById('addNumber').value='';
+      document.getElementById('addYear').value='';
+      ['front','spine','back'].forEach(s=>{ addImages[s]=null; clearPreview(s,false); });
+      addCount=1; document.getElementById('countVal').textContent=1;
+      addCond=null; document.querySelectorAll('#addCondRow .cond-btn').forEach(b=>b.classList.remove('active'));
+      showMsg('Gemt! ✓','ok');
+      await loadBooks(false);
+    } catch(e) {
+      showMsg('Fejl: '+e.message,'err');
+    } finally {
+      btn.disabled=false; btn.textContent='TILFØJ BOG';
+      progress.classList.remove('active');
+    }
+  }
+
+  function setProgress(id, pct, text) {
+    document.getElementById(id+'ProgressFill').style.width = pct+'%';
+    document.getElementById(id+'ProgressText').textContent = text;
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('saveMsg');
+    el.textContent=text; el.className='save-msg '+type;
+    setTimeout(()=>{ el.textContent=''; el.className='save-msg'; }, 3000);
+  }
+
+  // ── SAMLING ───────────────────────────────────────────────
+  function setFilter(f, el) {
+    collectionFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    renderCollection();
+  }
+
+  // cardDupliIdx tracks which duplicate is shown per book number
+  let cardDupliIdx = {};
+
+  function cycleDupli(number, total, event) {
+    event.stopPropagation();
+    cardDupliIdx[number] = ((cardDupliIdx[number] || 0) + 1) % total;
+    cardView = {}; // reset image flip for this group
+    renderCollection();
+  }
+
+  async function makePrimary(id, number, event) {
+    event.stopPropagation();
+    // Set all books with this number to is_primary=false, then set this one to true
+    await sb.from('books').update({ is_primary: false }).eq('number', number);
+    await sb.from('books').update({ is_primary: true }).eq('id', id);
+    await loadBooks(false);
+  }
+
+  function renderCollection() {
+    const grid = document.getElementById('collectionGrid');
+    // Build list of primary books per number (or currently shown dupli)
+    let numbers = Object.keys(bookGroups).map(Number).sort((a,b)=>a-b);
+
+    if (collectionFilter==='replace') numbers = numbers.filter(n => {
+      const group = bookGroups[n];
+      // Vis kun hvis alle eksemplarer har tilstand 1 (eller ingen tilstand)
+      return group.some(b => b.condition === 1) && !group.some(b => b.condition > 1);
+    });
+    if (collectionFilter==='incomplete') numbers = numbers.filter(n => bookGroups[n].every(b=>!b.front_image&&!b.spine_image&&!b.back_image));
+
+    document.getElementById('collectionInfo').textContent = `${numbers.length} BØGER VISES`;
+    if (!numbers.length) { grid.innerHTML='<div class="empty-msg">Ingen bøger matcher filteret.</div>'; return; }
+
+    grid.innerHTML = numbers.map(number => {
+      const group = bookGroups[number];
+      const cnt = group.length;
+      const idx = Math.min(cardDupliIdx[number] || 0, cnt - 1);
+      const b = group[idx];
+
+      const imgs = [b.front_image, b.spine_image, b.back_image].filter(Boolean);
+      const hasImg = imgs.length > 0;
+      const vi = Math.min(cardView[b.id] || 0, imgs.length - 1);
+      const imgSrc = imgs[vi];
+      const imgHtml = imgSrc ? `<img class="book-img" src="${imgSrc}" loading="lazy" onclick="event.stopPropagation();openLightbox('${imgSrc}')" />` : '';
+
+      const labels = [];
+      if (b.front_image) labels.push('FOR');
+      if (b.spine_image) labels.push('RYG');
+      if (b.back_image) labels.push('BAG');
+      const flipHtml = labels.length > 1 ? `<div class="flip-hint">${labels.map((l,i)=>i===vi?`<b style="color:var(--gold)">${l}</b>`:l).join(' · ')}</div>` : '';
+
+      const badges = [];
+      if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleDupli(${number},${cnt},event)" title="Klik for at se næste eksemplar">×${cnt} &rsaquo;</span>`);
+      if (b.condition) badges.push(condBadgeHtml(b.condition));
+      if (!hasImg) badges.push(`<span class="badge incomplete">INGEN BILLEDER</span>`);
+      // Rotér-knap for det aktuelle billede
+      const imgKeys = [['front_image','for'],['spine_image','ryg'],['back_image','bag']];
+      const currentImgKey = imgKeys.filter(([k])=>b[k])[vi]?.[0] || null;
+      const rotateBtn = currentImgKey ? `<button class="rotate-btn" onclick="event.stopPropagation();rotateImage(${b.id},'${currentImgKey}',event)" title="Rotér billede 90°">↻</button>` : '';
+      const badgeHtml = `<div class="card-badges">${badges.join('')}${rotateBtn}</div>`;
+
+      const displayTitle = b.title || getTitle(b.number);
+      const titleHtml = displayTitle ? `<div class="book-title">${displayTitle}</div>` : '';
+
+      // Show which duplicate we're viewing + make primary button
+      const dupliNav = cnt > 1 ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;display:flex;align-items:center;justify-content:space-between;">
+        <span>Eksemplar ${idx+1} af ${cnt}${b.is_primary?' · ★ PRIMÆR':''}</span>
+        ${!b.is_primary ? `<button onclick="makePrimary(${b.id},${number},event)" style="background:none;border:1px solid var(--dim);border-radius:3px;color:var(--dim);font-size:9px;padding:1px 6px;cursor:pointer;font-family:'Courier New',monospace;" title="Gør dette til primær">GØR PRIMÆR</button>` : ''}
+      </div>` : '';
+
+      return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''}" onclick="cycleImg(${b.id},${imgs.length})">
+        <button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button>
+        <button class="delete-btn" onclick="event.stopPropagation();deleteBook(${b.id})">✕</button>
+        <div class="book-number">Jumbobog nr. ${b.number}</div>
+        ${titleHtml}${b.year?`<div class="book-year">${b.year}</div>`:''}
+        ${badgeHtml}${dupliNav}${imgHtml}${flipHtml}
+      </div>`;
+    }).join('');
+  }
+
+  function cycleImg(id, total) {
+    if (total<=1) return;
+    cardView[id]=((cardView[id]||0)+1)%total;
+    renderCollection();
+  }
+
+  async function deleteBook(id) {
+    const b = books.find(b=>b.id===id); if(!b) return;
+    if (!confirm(`Slet Jumbo #${String(b.number).padStart(3,'0')} fra samlingen?`)) return;
+    setLoading(true,'SLETTER...');
+    await Promise.all([
+      deleteImageByUrl(b.front_image),
+      deleteImageByUrl(b.spine_image),
+      deleteImageByUrl(b.back_image)
+    ]);
+    await sb.from('books').delete().eq('id', id);
+    await loadBooks(false);
+    setLoading(false);
+  }
+
+  // ── EDIT MODAL ────────────────────────────────────────────
+  function openEdit(id) {
+    const b = books.find(b=>b.id===id); if(!b) return;
+    document.getElementById('editId').value=id;
+    document.getElementById('editNumber').value=b.number;
+    // titel sættes automatisk fra JUMBO_TITLES
+    document.getElementById('editYear').value=b.year||'';
+    editCount=b.count||1; document.getElementById('editCountVal').textContent=editCount;
+    editCond=b.condition||null;
+    document.querySelectorAll('#editCondRow .cond-btn').forEach((btn,i)=>btn.classList.toggle('active',editCond===i+1));
+    editImages = { front:null, spine:null, back:null };
+    editExistingUrls = { front:b.front_image||null, spine:b.spine_image||null, back:b.back_image||null };
+    ['front','spine','back'].forEach(s=>{
+      const url = editExistingUrls[s];
+      if (url) showUrlPreview(s,url,true); else clearPreview(s,true);
+    });
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  async function deleteFromModal() {
+    const id = Number(document.getElementById('editId').value);
+    const b = books.find(b=>b.id===id); if(!b) return;
+    if (!confirm(`Slet Jumbo #${String(b.number).padStart(3,'0')} (dette eksemplar) permanent?`)) return;
+    closeModal();
+    await deleteBook(id);
+  }
+
+  function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+  function maybeClose(e) { if(e.target===document.getElementById('editModal')) closeModal(); }
+
+  async function saveEdit() {
+    const id = Number(document.getElementById('editId').value);
+    const b = books.find(b=>b.id===id); if(!b) return;
+    const saveBtn = document.getElementById('editSaveBtn');
+    const cancelBtn = document.getElementById('editCancelBtn');
+    saveBtn.disabled=true; saveBtn.textContent='GEMMER...'; cancelBtn.disabled=true;
+    const progress = document.getElementById('editProgress');
+    progress.classList.add('active');
+
+    try {
+      const urls = {
+        front_image: editExistingUrls.front,
+        spine_image: editExistingUrls.spine,
+        back_image: editExistingUrls.back
+      };
+      const sides = [['front','front_image'],['spine','spine_image'],['back','back_image']];
+      let done=0;
+      for (const [side, key] of sides) {
+        if (editImages[side]) {
+          setProgress('edit', done/3*100, `UPLOADER ${side.toUpperCase()}BILLEDE...`);
+          if (editExistingUrls[side]) await deleteImageByUrl(editExistingUrls[side]);
+          urls[key] = await uploadImage(editImages[side], b.number, side);
+        }
+        done++;
+        setProgress('edit', done/3*100, done===3?'GEMMER...':'UPLOADER...');
+      }
+
+      await sb.from('books').update({
+        title: getTitle(b.number),
+        year: document.getElementById('editYear').value.trim(),
+        count: editCount,
+        condition: editCond,
+        ...urls
+      }).eq('id', id);
+
+      closeModal();
+      await loadBooks(false);
+    } catch(e) {
+      alert('Fejl: '+e.message);
+    } finally {
+      saveBtn.disabled=false; saveBtn.textContent='GEM ÆNDRINGER'; cancelBtn.disabled=false;
+      progress.classList.remove('active');
+    }
+  }
+
+  // ── MANGLER ───────────────────────────────────────────────
+  function renderMissing() {
+    const grid = document.getElementById('missingGrid');
+    const info = document.getElementById('missingInfo');
+    if (books.length===0) { info.textContent='Ingen bøger registreret endnu.'; grid.innerHTML=''; return; }
+    const nums = books.map(b=>b.number);
+    const have = new Set(nums);
+    // Ønskes udskiftet: kun hvis der IKKE findes et eksemplar med karakter > 1
+    const replaceSet = new Set(
+      Object.keys(bookGroups)
+        .map(Number)
+        .filter(n => bookGroups[n].some(b => b.condition === 1) && !bookGroups[n].some(b => b.condition > 1))
+    );
+    const max = settings.maxBook || Math.max(...nums);
+    let missingCount=0, replaceCount=0;
+    const items=[];
+    for (let i=1; i<=max; i++) {
+      if (!have.has(i)) { items.push({n:i,type:'absent'}); missingCount++; }
+      else if (replaceSet.has(i)) { items.push({n:i,type:'replace'}); replaceCount++; }
+    }
+    info.innerHTML = `Viser #1–#${max} (${books.length} registrerede)<br>
+      Mangler helt: <b style="color:var(--red)">${missingCount}</b> &nbsp;·&nbsp;
+      Ønskes udskiftet: <b style="color:var(--orange)">${replaceCount}</b>`;
+    if (!items.length) {
+      grid.innerHTML='<div style="grid-column:span 4;color:var(--green);text-align:center;padding:24px;font-weight:700;font-size:14px;">SAMLINGEN ER KOMPLET! 🎉</div>';
+    } else {
+      grid.innerHTML=items.map(item=>`<div class="missing-num ${item.type}">#${String(item.n).padStart(3,'0')}</div>`).join('');
+    }
+  }
+
+  // ── SLET ALT ──────────────────────────────────────────────
+  async function syncTitles() {
+    const btn = document.querySelector('[onclick="syncTitles()"]');
+    const msg = document.getElementById('syncMsg');
+    btn.disabled = true; btn.textContent = 'OPDATERER...';
+    let updated = 0, skipped = 0;
+    try {
+      // Process in batches of 50
+      const booksToUpdate = books.filter(b => getTitle(b.number));
+      for (let i = 0; i < booksToUpdate.length; i += 50) {
+        const batch = booksToUpdate.slice(i, i+50);
+        for (const b of batch) {
+          await sb.from('books').update({ title: getTitle(b.number) }).eq('id', b.id);
+          updated++;
+        }
+        msg.className = 'save-msg ok';
+        msg.textContent = `Opdateret ${updated} af ${booksToUpdate.length}...`;
+      }
+      skipped = books.length - booksToUpdate.length;
+      msg.className = 'save-msg ok';
+      msg.textContent = `✓ ${updated} titler opdateret, ${skipped} uændrede`;
+      await loadBooks(false);
+    } catch(e) {
+      msg.className = 'save-msg err';
+      msg.textContent = 'Fejl: ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '🔤 OPDATER TITLER PÅ ALLE BØGER';
+    }
+  }
+
+  async function clearAll() {
+    const pw = prompt('Indtast kodeord for at slette hele samlingen:');
+    if (pw===null) return;
+    if (pw!==DELETE_PASSWORD) { alert('Forkert kodeord — samlingen er ikke slettet.'); return; }
+    if (!confirm('Kodeord accepteret. Slet HELE samlingen permanent?')) return;
+    setLoading(true, 'SLETTER BILLEDER...');
+
+    // Hent ALLE filer fra Storage bucket og slet dem
+    try {
+      const { data: files } = await sb.storage.from(BUCKET).list('', { limit: 10000 });
+      if (files && files.length > 0) {
+        // Hent undermapper (én per bognummer)
+        const allPaths = [];
+        for (const folder of files) {
+          if (folder.name) {
+            const { data: subFiles } = await sb.storage.from(BUCKET).list(folder.name, { limit: 10000 });
+            if (subFiles) {
+              subFiles.forEach(f => allPaths.push(`${folder.name}/${f.name}`));
+            }
+          }
+        }
+        if (allPaths.length > 0) {
+          // Slet i batches af 100
+          for (let i = 0; i < allPaths.length; i += 100) {
+            await sb.storage.from(BUCKET).remove(allPaths.slice(i, i + 100));
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('Storage sletning fejl:', e);
+    }
+
+    setLoading(true, 'SLETTER DATABASE...');
+    await sb.rpc('delete_all_books');
+    await loadBooks(false);
+    setLoading(false);
+    alert('Samlingen er slettet.');
+  }
+
+  // ── EXPORT / IMPORT ───────────────────────────────────────
+  function exportData() {
+    const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jumbo-samling.json'; a.click();
+  }
+
+  async function importData(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        const imp = JSON.parse(ev.target.result);
+        if (!Array.isArray(imp)) throw new Error('Ugyldigt format');
+        if (!confirm(`Importer ${imp.length} bøger? Eksisterende bøger med samme nummer tilføjes som dubletter.`)) return;
+        setLoading(true, 'IMPORTERER...');
+        const existingNums = new Set(books.map(b => b.number));
+        // Sæt is_primary: første gang vi ser et nummer = primær
+        const seenNums = new Set();
+        const toInsert = imp.map(b => {
+          const isPrimary = !existingNums.has(b.number) && !seenNums.has(b.number);
+          seenNums.add(b.number);
+          return { ...b, is_primary: isPrimary, count: undefined };
+        });
+        let done = 0;
+        for (let i = 0; i < toInsert.length; i += 20) {
+          const batch = toInsert.slice(i, i + 20);
+          await sb.from('books').insert(batch);
+          done += batch.length;
+          setLoading(true, `IMPORTERER... ${done}/${toInsert.length}`);
+        }
+        await loadBooks(false);
+        setLoading(false);
+        alert(`✅ Importeret ${toInsert.length} bøger!`);
+      } catch(err) {
+        setLoading(false);
+        alert('Fejl: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ── BAGGRUNDSBILLEDE ─────────────────────────────────────
+  const BG_KEY = 'jumbo_bg_image';
+
+  function setBgImage(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result;
+      localStorage.setItem(BG_KEY, b64);
+      applyBgImage(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyBgImage(b64) {
+    const wrapper = document.getElementById('app-wrapper');
+    wrapper.style.backgroundImage = `url('${b64}')`;
+    wrapper.style.backgroundSize = 'cover';
+    wrapper.style.backgroundPosition = 'center top';
+    wrapper.style.backgroundRepeat = 'no-repeat';
+    document.querySelector('.body').style.background = 'rgba(13,13,26,0.80)';
+  }
+
+  function clearBgImage() {
+    localStorage.removeItem(BG_KEY);
+    const wrapper = document.getElementById('app-wrapper');
+    wrapper.style.backgroundImage = '';
+    document.querySelector('.body').style.background = 'var(--bg)';
+  }
+
+  function loadBgImage() {
+    const saved = localStorage.getItem(BG_KEY);
+    if (saved) applyBgImage(saved);
+  }
+
+  // ── START ─────────────────────────────────────────────────
+  loadBgImage();
+  init();
+</script>
+
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="" />
+</div>
+</body>
+</html>
