@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Anders And samling</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #e8c547; --bg: #0d0d1a; --surface: #111127; --surface2: #1a1a2e;
+      --text: #f0f0f0; --muted: #888; --dim: #555;
+      --green: #4caf50; --red: #c0392b; --green-bg: #0a2a0a; --red-bg: #2a0a0a;
+      --orange: #e67e22; --orange-bg: #2a1500;
+      --tab-size: 11px; --btn-pad: 9px 12px; --card-font: 13px; --tab-pad: 8px 14px;
+    }
+    /* ── TEMAER ── */
+    body.theme-light {
+      --gold: #c8960a; --bg: #f5f0e8; --surface: #fffdf7; --surface2: #ede8da;
+      --text: #1a1208; --muted: #7a6a4a; --dim: #b0a080;
+      --green: #2e7d32; --red: #c62828; --green-bg: #e8f5e9; --red-bg: #ffebee;
+      --orange: #e65100; --orange-bg: #fff3e0;
+    }
+    body.theme-nautical {
+      --gold: #5bc8d4; --bg: #0a1628; --surface: #0f2040; --surface2: #162850;
+      --text: #e8f4f8; --muted: #6a9ab0; --dim: #3a5a70;
+      --green: #26c6a2; --red: #ef5350; --green-bg: #0a2820; --red-bg: #280a0a;
+      --orange: #ffa726; --orange-bg: #281800;
+    }
+    body.theme-retro {
+      --gold: #e85d04; --bg: #fdf6e3; --surface: #f0e6c8; --surface2: #e4d5a8;
+      --text: #2d1b00; --muted: #8b6914; --dim: #c4a258;
+      --green: #386641; --red: #ae2012; --green-bg: #d8edda; --red-bg: #fce4e4;
+      --orange: #ca6702; --orange-bg: #fef0d0;
+    }
+    body.mobile-large .tab { padding:14px 16px; font-size:14px; }
+    body.mobile-large .btn { padding:20px 24px; font-size:18px; min-height:60px; }
+    body.mobile-large .btn-quick { padding:18px 22px; font-size:17px; }
+    body.mobile-large .btn-sm { padding:18px 22px; font-size:17px; min-height:58px; }
+    body.mobile-large .filter-btn { padding:16px 22px; font-size:16px; min-height:54px; }
+    body.mobile-large .book-card { border-radius:10px; }
+    body.mobile-large .edit-btn { font-size:20px; padding:2px 4px; }
+    body.mobile-large .delete-btn { font-size:22px; padding:6px 8px; }
+    body.mobile-large .rotate-btn { font-size:28px; padding:6px 10px; }
+    body.mobile-large .flip-hint { font-size:16px; margin-top:6px; }
+    body.mobile-large .img-nav span { font-size:28px; }
+    body.mobile-large .dupli-badge { font-size:16px; padding:6px 14px; }
+    body.mobile-large .badge { font-size:13px; padding:4px 10px; }
+    body.mobile-large .cond-btn { padding:18px 4px; font-size:13px; }
+    body.mobile-large input[type="text"], body.mobile-large input[type="number"], body.mobile-large textarea { padding:16px 18px; font-size:19px; }
+    body.mobile-large .count-btn { width:54px; height:54px; font-size:28px; }
+    body.mobile-large .count-val { font-size:24px; }
+    body.mobile-large header h1 { font-size:26px; }
+    body.mobile-large .book-number { font-size:15px; }
+    body.mobile-large .book-title { font-size:13px; }
+    body.mobile-large .book-year { font-size:12px; }
+
+    /* Lyst tema: mørke borders og tekst */
+    body.theme-light header { border-bottom:2px solid var(--gold); }
+    body.theme-light .book-card { border-color:#c8b890; }
+    body.theme-light input[type="text"], body.theme-light input[type="number"] { border-color:#c8b890; color:var(--text); }
+    body.theme-light .tab { color:var(--muted); }
+    body.theme-light .filter-btn { border-color:#c8b890; color:var(--muted); }
+    body.theme-light .filter-btn.active { background:var(--gold); color:#fff; border-color:var(--gold); }
+    body.theme-light #app-wrapper { box-shadow:0 0 40px rgba(0,0,0,0.15); }
+    body.theme-light .missing-num.absent { color:var(--red); }
+    body.theme-light .missing-num.replace { color:var(--orange); }
+
+    /* Retro tema */
+    body.theme-retro { font-family: 'Georgia', serif; }
+    body.theme-retro header h1 { font-style:italic; }
+    body.theme-retro .book-card { border-radius:0; border-width:2px; }
+    body.theme-retro .tab { font-family:'Georgia',serif; }
+    body.theme-retro input[type="text"], body.theme-retro input[type="number"] { border-color:#c4a258; }
+    body.theme-retro .filter-btn { border-radius:0; }
+    body.theme-retro .missing-num.absent { color:var(--red); }
+    body.theme-retro .missing-num.replace { color:var(--orange); }
+
+    /* Nautisk tema */
+    body.theme-nautical .book-card { border-color:#1e4060; }
+    body.theme-nautical .spinner { border-top-color:var(--gold); border-color:#1e3050; }
+    body.theme-nautical input[type="text"], body.theme-nautical input[type="number"] { border-color:#1e4060; }
+    body.theme-nautical .filter-btn { border-color:#1e4060; }
+
+    body { background:var(--bg); color:var(--text); font-family:'Courier New',monospace; min-height:100vh; padding-bottom:40px; background-size:cover; background-position:center; background-attachment:fixed; background-repeat:no-repeat; }
+    .body { position:relative; z-index:1; }
+
+    #app-wrapper { max-width:1400px; margin:0 auto; background:var(--bg); min-height:100vh; box-shadow:0 0 60px rgba(0,0,0,0.9); }
+
+    #loadingOverlay { position:fixed; inset:0; background:var(--bg); z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+    #loadingOverlay.hidden { display:none; }
+    .spinner { width:40px; height:40px; border:3px solid #333; border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loadingOverlay p { color:var(--muted); font-size:12px; letter-spacing:2px; }
+
+    header { background:var(--surface); border-bottom:2px solid var(--gold); padding:0; position:sticky; top:0; z-index:100; overflow:visible; }
+    .header-top { padding:16px 16px 8px 16px; display:block; }
+    .header-text { min-width:0; }
+    #headerDuck { display:none; pointer-events:none; user-select:none; }
+    @media (min-width:600px) {
+      #headerDuck { display:block; position:absolute; right:0; top:0; bottom:0; width:75px; height:auto; z-index:103; object-fit:contain; object-position:bottom right; }
+    }
+    header h1 { color:var(--gold); font-size:18px; letter-spacing:2px; font-weight:700; }
+    header p { color:var(--dim); font-size:10px; letter-spacing:2px; margin-top:2px; margin-bottom:12px; }
+    .tabs { display:flex; overflow-x:auto; justify-content:flex-start; scrollbar-width:none; margin-left:-16px; margin-right:-16px; width:calc(100% + 32px); }
+    .tabs::-webkit-scrollbar { display:none; }
+    .theme-btn { background:var(--surface); border:2px solid #333; border-radius:6px; color:var(--muted); font-family:'Courier New',monospace; font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer; padding:8px; text-align:center; transition:all 0.15s; }
+    .theme-btn:hover { border-color:var(--gold); color:var(--text); }
+    .theme-btn.active { border-color:var(--gold); color:var(--gold); }
+    .theme-preview { width:100%; height:28px; border-radius:3px; border:2px solid #333; margin-bottom:6px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+    .tab { padding:8px 10px; background:transparent; color:var(--muted); border:none; cursor:pointer; font-family:'Courier New',monospace; font-weight:700; font-size:11px; letter-spacing:0.5px; white-space:nowrap; flex-shrink:0; transition:background 0.15s,color 0.15s; }
+    .tab.active { background:var(--gold); color:var(--bg); }
+
+    .body { padding:8px; max-width:1400px; margin:0 auto; background:var(--bg); min-height:calc(100vh - 90px); }
+    .view { display:none; }
+    .view.active { display:block; }
+
+    .field label { color:var(--muted); font-size:11px; letter-spacing:2px; display:block; margin-bottom:6px; }
+    input[type="text"],input[type="number"],input[type="password"] { background:var(--surface); border:1px solid #333; border-radius:3px; color:var(--text); font-family:'Courier New',monospace; font-size:16px; padding:12px 14px; width:100%; outline:none; transition:border-color 0.2s; }
+    input:focus { border-color:var(--gold); }
+
+    /* SØGNING */
+    .search-label { color:var(--muted); font-size:11px; letter-spacing:2px; display:block; margin-bottom:8px; margin-top:20px; }
+    #searchInput { background:var(--surface); border:2px solid #333; border-radius:3px; color:var(--gold); font-family:'Courier New',monospace; font-size:20px; font-weight:700; padding:8px 12px; width:100%; text-align:center; letter-spacing:2px; outline:none; transition:border-color 0.2s; }
+    #searchInput:focus { border-color:var(--gold); }
+    .result-box { border-radius:6px; padding:20px; text-align:center; margin-top:16px; animation:fadeIn 0.25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
+    .result-box.found { background:var(--green-bg); border:2px solid var(--green); }
+    .result-box.not-found { background:var(--red-bg); border:2px solid var(--red); }
+    .result-emoji { font-size:44px; }
+    .result-title { font-size:20px; font-weight:700; margin-top:8px; }
+    .result-box.found .result-title { color:var(--green); }
+    .result-box.not-found .result-title { color:var(--red); }
+    .result-sub { color:var(--muted); margin-top:6px; font-size:13px; }
+    .result-img { margin-top:10px; max-height:140px; border-radius:4px; }
+    .dupli-badge { display:inline-block; background:var(--orange); color:#fff; font-size:13px; font-weight:700; padding:4px 10px; border-radius:10px; margin-top:6px; }
+
+    /* TILSTAND */
+    .condition-row { display:flex; gap:6px; }
+    .cond-btn { flex:1; padding:8px 4px; background:var(--surface2); border:1px solid #333; border-radius:3px; color:var(--muted); font-family:'Courier New',monospace; font-size:10px; cursor:pointer; text-align:center; transition:all 0.15s; line-height:1.4; }
+    .cond-btn.active.c1 { border-color:var(--red); color:var(--red); background:var(--red-bg); }
+    .cond-btn.active.c2 { border-color:var(--orange); color:var(--orange); background:var(--orange-bg); }
+    .cond-btn.active.c3 { border-color:#c8b400; color:#c8b400; background:#1e1a00; }
+    .cond-btn.active.c4 { border-color:#7cb342; color:#7cb342; background:#0d1f00; }
+    .cond-btn.active.c5 { border-color:var(--green); color:var(--green); background:var(--green-bg); }
+    .cond-num { font-size:16px; font-weight:700; }
+    .cond-label { font-size:9px; letter-spacing:1px; }
+
+    /* FORM */
+    .form { display:flex; flex-direction:column; gap:14px; margin-top:20px; }
+    .quick-add { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:14px; }
+    .quick-add h3 { color:var(--gold); font-size:11px; letter-spacing:2px; margin-bottom:10px; }
+    .num-row { display:flex; gap:8px; align-items:flex-end; }
+    .count-ctrl { display:flex; align-items:center; gap:10px; }
+    .count-btn { background:var(--surface2); border:1px solid var(--gold); color:var(--gold); width:42px; height:42px; border-radius:3px; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .count-val { color:var(--gold); font-size:22px; font-weight:700; min-width:30px; text-align:center; }
+    .img-section h3 { color:var(--muted); font-size:11px; letter-spacing:2px; margin-bottom:10px; }
+    .img-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .upload-box { border:2px dashed #333; border-radius:4px; padding:10px 6px; text-align:center; cursor:pointer; color:var(--dim); font-size:18px; transition:border-color 0.2s,background 0.2s; position:relative; min-height:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; }
+    .upload-box:hover { border-color:var(--gold); }
+    .upload-box.has-image { border-color:var(--gold); background:var(--surface2); }
+    .upload-box.uploading { border-color:var(--muted); }
+    .upload-box img { max-height:90px; max-width:100%; border-radius:3px; object-fit:cover; }
+    .upload-box input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-label { text-align:center; font-size:10px; color:var(--muted); margin-top:4px; letter-spacing:1px; }
+    .compress-info { font-size:9px; color:var(--dim); margin-top:2px; }
+
+    .btn { background:var(--gold); color:var(--bg); border:none; border-radius:3px; padding:14px 20px; font-family:'Courier New',monospace; font-weight:700; font-size:15px; cursor:pointer; letter-spacing:1px; width:100%; transition:opacity 0.15s; }
+    .btn:hover { opacity:0.85; }
+    .btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .btn-quick { padding:12px 18px; font-size:14px; width:auto; white-space:nowrap; }
+    .save-msg { text-align:center; font-weight:700; font-size:13px; min-height:18px; }
+    .save-msg.ok { color:var(--green); }
+    .save-msg.err { color:var(--red); }
+
+    /* PROGRESS */
+    .progress-wrap { margin-top:6px; display:none; }
+    .progress-wrap.active { display:block; }
+    .progress-bar { background:#222; border-radius:4px; height:5px; }
+    .progress-fill { background:var(--gold); height:100%; border-radius:4px; transition:width 0.2s; }
+    .progress-text { color:var(--muted); font-size:10px; margin-top:3px; text-align:center; letter-spacing:1px; }
+
+    /* SAMLING */
+    .filter-row { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .filter-btn { background:transparent; border:1px solid #333; color:var(--muted); border-radius:20px; padding:8px 16px; font-family:'Courier New',monospace; font-size:13px; cursor:pointer; transition:all 0.15s; }
+    .filter-btn.active { background:var(--gold); color:var(--bg); border-color:var(--gold); }
+    .collection-info { color:var(--muted); font-size:11px; letter-spacing:1px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .collection-info .refresh-btn { margin-left:auto; }
+    .refresh-btn { background:none; border:none; color:var(--dim); cursor:pointer; font-size:22px; padding:6px 10px; line-height:1; }
+    .refresh-btn:hover { color:var(--gold); }
+    .collection-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+    .book-card { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:5px; min-width:0; display:flex; flex-direction:column; }
+    .book-card.has-images { border-color:var(--gold); cursor:pointer; }
+    .book-card.has-images:hover { background:#1e1e38; }
+    .book-card.dupli { border-color:var(--orange); }
+    .book-card.cond1 { border-color:var(--red) !important; }
+    .book-number { color:var(--gold); font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+    .card-header { display:flex; align-items:flex-start; gap:2px; width:100%; }
+    .card-header { display:flex; align-items:flex-start; gap:2px; width:100%; }
+    .book-title { color:var(--text); font-size:11px; margin-top:2px; line-height:1.3; word-break:break-word; }
+    .book-year { color:var(--muted); font-size:10px; margin-top:1px; }
+    .book-img { width:100%; border-radius:4px; object-fit:contain; background:#0d0d1a; max-height:160px; margin-top:auto; display:block; cursor:zoom-in; }
+    .flip-hint { display:flex; align-items:center; justify-content:center; gap:4px; color:var(--dim); font-size:11px; margin-top:3px; min-height:18px; }
+    .img-wrap { position:relative; margin-top:auto; }
+    .img-nav { position:absolute; top:0; bottom:0; width:33%; cursor:pointer; display:flex; align-items:center; z-index:2; opacity:0; transition:opacity 0.15s; }
+    .img-nav-left { left:0; justify-content:flex-start; padding-left:4px; background:linear-gradient(to right, rgba(0,0,0,0.45), transparent); border-radius:4px 0 0 4px; }
+    .img-nav-right { right:0; justify-content:flex-end; padding-right:4px; background:linear-gradient(to left, rgba(0,0,0,0.45), transparent); border-radius:0 4px 4px 0; }
+    .img-wrap:hover .img-nav { opacity:1; }
+    .img-nav span { color:#fff; font-size:22px; font-weight:700; line-height:1; text-shadow:0 0 6px #000; }
+    .img-center { position:absolute; top:0; bottom:0; left:33%; right:33%; cursor:zoom-in; z-index:2; }
+    .card-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; min-height:26px; align-items:center; justify-content:space-between; }
+    .badges-left { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+    .badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:8px; line-height:1.4; display:inline-block; }
+    .badge.dupli { background:var(--orange); color:#fff; }
+    .badge.incomplete { background:#2a2a2a; color:var(--muted); }
+    .badge.c1 { background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
+    .badge.c2 { background:var(--orange-bg); color:var(--orange); border:1px solid var(--orange); }
+    .badge.c3 { background:#1e1a00; color:#c8b400; border:1px solid #c8b400; }
+    .badge.c4 { background:#0d1f00; color:#7cb342; border:1px solid #7cb342; }
+    .badge.c5 { background:var(--green-bg); color:var(--green); border:1px solid var(--green); }
+    .delete-btn { position:absolute; top:6px; right:6px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px; padding:4px 6px; }
+    .delete-btn:hover { color:var(--red); }
+    .edit-btn { background:none; border:none; color:var(--dim); cursor:pointer; font-size:16px; padding:2px 4px; flex-shrink:0; line-height:1; }
+    .edit-btn:hover { color:var(--gold); }
+    .empty-msg { color:var(--dim); text-align:center; margin-top:36px; font-size:13px; grid-column:span 2; }
+
+    /* MANGLER */
+    .missing-info { color:var(--muted); font-size:12px; margin-top:16px; margin-bottom:8px; line-height:1.7; }
+    .missing-legend { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+    .legend-dot { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+    .missing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .missing-num { border-radius:3px; text-align:center; padding:8px 4px; font-size:12px; font-weight:700; }
+    .missing-num.absent { background:var(--red-bg); border:1px solid var(--red); color:var(--red); }
+    .missing-num.replace { background:var(--orange-bg); border:1px solid var(--orange); color:var(--orange); }
+
+    /* MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:200; overflow-y:auto; padding:20px 16px; }
+    .modal-overlay.open { display:block; }
+    .modal { background:var(--surface); border:1px solid var(--gold); border-radius:6px; padding:20px; max-width:480px; margin:0 auto; }
+    .modal h2 { color:var(--gold); font-size:15px; letter-spacing:2px; margin-bottom:16px; }
+    .modal-form { display:flex; flex-direction:column; gap:14px; }
+    .modal-btns { display:flex; gap:8px; }
+    .btn-cancel { background:transparent; color:var(--muted); border:1px solid #333; border-radius:3px; padding:10px 16px; font-family:'Courier New',monospace; font-weight:700; font-size:12px; cursor:pointer; flex:1; }
+    .btn-save { flex:2; }
+
+    /* VÆRKTØJ */
+    .tools-list { display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+    .section-title { color:var(--muted); font-size:11px; letter-spacing:2px; margin-top:10px; margin-bottom:2px; }
+    .btn-sm { background:transparent; color:var(--gold); border:1px solid var(--gold); border-radius:3px; padding:13px 18px; font-family:'Courier New',monospace; font-size:14px; font-weight:700; cursor:pointer; letter-spacing:1px; width:100%; text-align:center; transition:background 0.15s,color 0.15s; display:block; }
+    .btn-sm:hover { background:var(--gold); color:var(--bg); }
+    .btn-danger { border-color:var(--red); color:var(--red); }
+    .btn-danger:hover { background:var(--red); color:#fff; }
+    .max-row { display:flex; gap:8px; align-items:flex-end; }
+    .max-row input { flex:1; }
+    .max-row .btn { width:auto; padding:9px 16px; font-size:12px; }
+    .info-box { background:var(--surface2); border:1px solid #333; border-radius:4px; padding:12px; font-size:11px; color:var(--muted); line-height:1.7; }
+
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+
+    @media (min-width:600px) {
+      .collection-grid { grid-template-columns:repeat(3,1fr); } }
+    @media (min-width:900px) {
+      #headerDuck { width:85px; } .collection-grid { grid-template-columns:repeat(4,1fr); } }
+    @media (min-width:1200px) { .collection-grid { grid-template-columns:repeat(5,1fr); } }
+    @media (min-width:1400px) { .collection-grid { grid-template-columns:repeat(6,1fr); } }
+    @media (min-width:600px) { .missing-grid { grid-template-columns:repeat(6,1fr); } }
+    @media (min-width:900px) { .missing-grid { grid-template-columns:repeat(8,1fr); } }
+    @media (min-width:1200px) { .missing-grid { grid-template-columns:repeat(10,1fr); } }
+
+    @media (min-width:768px) {
+      #searchInput { font-size:20px; }
+      .result-box { max-width:500px; margin:0 auto; }
+      .modal { max-width:600px; }
+      header h1 { font-size:22px; }
+      header p { font-size:12px; }
+      .tab { font-size:12px; padding:8px 12px; }
+      .field-wrap { max-width:600px; margin:0 auto; }
+    }
+
+    /* ROTÉR KNAP */
+    .rotate-btn { background:none; border:none; color:var(--dim); font-size:22px; cursor:pointer; padding:4px 4px 4px 8px; line-height:1; vertical-align:middle; transition:color 0.15s; }
+    .rotate-btn:hover { color:var(--gold); }
+    /* LIGHTBOX */
+    #lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; }
+    #lightbox.open { display:flex; }
+    #lightbox-close { position:fixed; top:16px; right:20px; color:#fff; font-size:32px; cursor:pointer; line-height:1; z-index:10000; }
+
+    @media (min-width:600px) { .book-img { max-height:220px; } }
+    @media (min-width:900px) { .book-img { max-height:200px; } }
+  </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingText">HENTER SAMLING...</p>
+</div>
+
+<div id="app-wrapper">
+
+<header>
+  <div class="header-top">
+    <div class="header-text">
+      <h1 id="appTitle">Anders And samling</h1>
+      <p id="bookCount">BOGSAMLING · INDLÆSER...</p>
+    </div>
+  
+  </div>
+  <img id="headerDuck" src="data:image/png;base64,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" alt="Anders And" />
+  <div class="tabs">
+    <button class="tab" onclick="switchView('add',this)">+ TILFØJ</button>
+    <button class="tab active" onclick="switchView('collection',this)">📚 JUMBOBØGER</button>
+    <button class="tab" onclick="switchView('pocket',this)">🦆 LOMME-ANDEN</button>
+    <button class="tab" onclick="switchView('mammut',this)">🐘 MAMMUTBØGER</button>
+    <button class="tab" onclick="switchView('theme',this)">🎨 TEMABØGER</button>
+    <button class="tab" onclick="switchView('other',this)">📖 ØVRIGE</button>
+    <button class="tab" onclick="switchView('tools',this)">⚙ INDSTILLINGER</button>
+  </div>
+</header>
+
+<div class="body">
+
+  <!-- JUMBOBØGER -->
+  <div class="view active" id="view-collection">
+    <div style="margin-top:16px;">
+      <label class="search-label" style="margin-top:0;">SØG EFTER BOGNUMMER</label>
+      <input id="searchInput" type="number" placeholder="Jumbobog nr. xxx" oninput="doSearch(this.value)" style="background:var(--surface);border:2px solid #333;border-radius:3px;color:var(--gold);font-family:'Courier New',monospace;font-size:20px;font-weight:700;padding:8px 12px;width:100%;text-align:center;letter-spacing:2px;outline:none;transition:border-color 0.2s;margin-bottom:4px;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" />
+      <div id="searchResult" style="margin-bottom:12px;"></div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setFilter('missing',this)">MANGLER</button>
+        <button class="filter-btn" onclick="setFilter('replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setFilter('incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info">
+        <span id="collectionInfo">INDLÆSER...</span>
+        <button class="refresh-btn" onclick="loadBooks(true)" title="Opdater">↻</button>
+      </div>
+      <div class="collection-grid" id="collectionGrid"></div>
+
+
+    </div>
+  </div>
+
+  <!-- TEMABØGER -->
+  <div class="view" id="view-theme">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('theme','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('theme','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('theme','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="themeInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div id="themeGrid"></div>
+    </div>
+  </div>
+
+  <!-- LOMME-ANDEN -->
+  <div class="view" id="view-pocket">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('pocket','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('pocket','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('pocket','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="pocketInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div id="pocketGrid"></div>
+    </div>
+  </div>
+
+  <!-- MAMMUTBØGER -->
+  <div class="view" id="view-mammut">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('mammut','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('mammut','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('mammut','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="mammutInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div class="collection-grid" id="mammutGrid"></div>
+    </div>
+  </div>
+
+  <!-- ØVRIGE -->
+  <div class="view" id="view-other">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('other','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('other','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('other','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="otherInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div class="collection-grid" id="otherGrid"></div>
+    </div>
+  </div>
+
+  <!-- TILFØJ -->
+  <div class="view" id="view-add">
+    <div class="form">
+      <div class="quick-add">
+        <h3>⚡ HURTIG TILFØJ</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="filter-btn active" id="qtype-jumbo" onclick="setQuickType('jumbo',this)">JUMBOBOG</button>
+          <button class="filter-btn" id="qtype-theme" onclick="setQuickType('theme',this)">TEMABOG</button>
+          <button class="filter-btn" id="qtype-pocket" onclick="setQuickType('pocket',this)">LOMME-ANDEN</button>
+          <button class="filter-btn" id="qtype-mammut" onclick="setQuickType('mammut',this)">MAMMUTBOG</button>
+          <button class="filter-btn" id="qtype-other" onclick="setQuickType('other',this)">ØVRIG</button>
+        </div>
+        <div class="num-row">
+          <div class="field" style="flex:1;">
+            <input type="number" id="quickNumber" placeholder="f.eks. 42" />
+          </div>
+          <div>
+            <div class="count-ctrl">
+              <button class="count-btn" onclick="changeQuickCount(-1)">−</button>
+              <span class="count-val" id="quickCountVal">1</span>
+              <button class="count-btn" onclick="changeQuickCount(1)">+</button>
+            </div>
+          </div>
+          <button class="btn btn-quick" id="quickAddBtn" onclick="quickAdd()">TILFØJ</button>
+        </div>
+        <div id="quickTitleField" style="display:none;margin-top:8px;">
+          <input type="text" id="quickTitle" placeholder="Bogens titel" style="background:var(--surface);border:1px solid #333;border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:8px 12px;width:100%;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" />
+        </div>
+        <div style="color:var(--dim);font-size:10px;margin-top:8px;letter-spacing:1px;">Billeder og detaljer kan tilføjes senere via ✏ i samlingen</div>
+      </div>
+
+      <div style="border-top:1px solid #222;padding-top:14px;">
+        <div style="color:var(--muted);font-size:11px;letter-spacing:2px;margin-bottom:12px;">TILFØJ MED DETALJER</div>
+
+        <div class="field">
+          <label>BOGTYPE *</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="filter-btn active" id="type-jumbo" onclick="setAddType('jumbo',this)">JUMBOBOG</button>
+            <button class="filter-btn" id="type-theme" onclick="setAddType('theme',this)">TEMABOG</button>
+            <button class="filter-btn" id="type-pocket" onclick="setAddType('pocket',this)">LOMME-ANDEN</button>
+            <button class="filter-btn" id="type-mammut" onclick="setAddType('mammut',this)">MAMMUTBOG</button>
+            <button class="filter-btn" id="type-other" onclick="setAddType('other',this)">ØVRIG</button>
+          </div>
+        </div>
+
+        <div class="field" id="addNumberField">
+          <label>BOGNUMMER *</label>
+          <input type="number" id="addNumber" placeholder="f.eks. 42" />
+        </div>
+
+        <div class="field" id="addTitleField" style="display:none;">
+          <label>TITEL</label>
+          <input type="text" id="addTitle" placeholder="Bogens titel" />
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label>ÅR / UDGAVE</label>
+          <input type="text" id="addYear" placeholder="f.eks. 1987" />
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>TILSTAND</label>
+          <div class="condition-row" id="addCondRow">
+            <button class="cond-btn c1" onclick="setAddCond(1)"><div class="cond-num">1</div><div class="cond-label">UDSKIFT</div></button>
+            <button class="cond-btn c2" onclick="setAddCond(2)"><div class="cond-num">2</div><div class="cond-label">DÅRLIG</div></button>
+            <button class="cond-btn c3" onclick="setAddCond(3)"><div class="cond-num">3</div><div class="cond-label">RIMELIG</div></button>
+            <button class="cond-btn c4" onclick="setAddCond(4)"><div class="cond-num">4</div><div class="cond-label">GOD</div></button>
+            <button class="cond-btn c5" onclick="setAddCond(5)"><div class="cond-num">5</div><div class="cond-label">PERFEKT</div></button>
+          </div>
+        </div>
+        <div class="img-section" style="margin-top:12px;">
+          <h3>BILLEDER — komprimeres automatisk til ~150KB</h3>
+          <div class="img-grid">
+            <div>
+              <div class="upload-box" id="frontBox">
+                <span id="frontPlaceholder">📷</span>
+                <img id="frontPreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'front')" />
+              </div>
+              <div class="upload-label">FORSIDE</div>
+            </div>
+            <div>
+              <div class="upload-box" id="spineBox">
+                <span id="spinePlaceholder">📷</span>
+                <img id="spinePreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'spine')" />
+              </div>
+              <div class="upload-label">RYG</div>
+            </div>
+            <div>
+              <div class="upload-box" id="backBox">
+                <span id="backPlaceholder">📷</span>
+                <img id="backPreview" style="display:none;" />
+                <input type="file" accept="image/*" capture="environment" onchange="handleImage(event,'back')" />
+              </div>
+              <div class="upload-label">BAGSIDE</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress-wrap" id="addProgress">
+          <div class="progress-bar"><div class="progress-fill" id="addProgressFill"></div></div>
+          <div class="progress-text" id="addProgressText">UPLOADER...</div>
+        </div>
+        <button class="btn" id="addBtn" style="margin-top:14px;" onclick="addBook()">TILFØJ BOG</button>
+        <div class="save-msg" id="saveMsg" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="border-top:1px solid #222;padding-top:14px;">
+        <div style="color:var(--muted);font-size:11px;letter-spacing:2px;margin-bottom:6px;">📋 MASSETILFØJ</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="filter-btn active" id="btype-jumbo" onclick="setBulkType('jumbo',this)">JUMBOBOG</button>
+          <button class="filter-btn" id="btype-theme" onclick="setBulkType('theme',this)">TEMABOG</button>
+          <button class="filter-btn" id="btype-pocket" onclick="setBulkType('pocket',this)">LOMME-ANDEN</button>
+          <button class="filter-btn" id="btype-mammut" onclick="setBulkType('mammut',this)">MAMMUTBOG</button>
+          <button class="filter-btn" id="btype-other" onclick="setBulkType('other',this)">ØVRIG</button>
+        </div>
+        <div style="color:var(--dim);font-size:11px;margin-bottom:8px;">Skriv numre adskilt med komma. Brug bindestreg for intervaller og + for "og opefter".<br>Eks: <span style="color:var(--gold);">1, 3-5, 12, 20+</span></div>
+        <textarea id="bulkInput" placeholder="f.eks. 93, 324, 331-333, 545+" style="background:var(--surface);border:1px solid #333;border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:10px 12px;width:100%;outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" oninput="previewBulk()"></textarea>
+        <div id="bulkPreview" style="color:var(--muted);font-size:11px;min-height:16px;margin-top:4px;"></div>
+        <button class="btn" style="margin-top:8px;" id="bulkAddBtn" onclick="bulkAdd()">TILFØJ ALLE</button>
+        <div class="save-msg" id="bulkMsg" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANGLER -->
+
+
+  <!-- VÆRKTØJ -->
+  <div class="view" id="view-tools">
+    <div class="tools-list">
+      <div class="section-title">OVERSKRIFTER</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Tilpas overskriften og undertitlen øverst i appen.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div>
+          <label style="color:var(--muted);font-size:10px;letter-spacing:1px;display:block;margin-bottom:4px;">OVERSKRIFT</label>
+          <input type="text" id="titleInput" placeholder="f.eks. Anders And samling" style="width:100%;background:var(--surface);border:1px solid #333;border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:7px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" />
+        </div>
+        <div>
+          <label style="color:var(--muted);font-size:10px;letter-spacing:1px;display:block;margin-bottom:4px;">UNDERTITEL</label>
+          <input type="text" id="subtitleInput" placeholder="f.eks. ANDERS AND SAMLING" style="width:100%;background:var(--surface);border:1px solid #333;border-radius:3px;color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:7px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#333'" />
+        </div>
+      </div>
+      <button class="btn-sm" onclick="saveTitles()" style="margin-top:4px;">GEM OVERSKRIFTER</button>
+      <div class="save-msg" id="titleMsg" style="margin-top:6px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">FARVETEMA</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:10px;">Vælg udseende for appen. Mobiltilstand forstørrer alle knapper og felter.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px;" id="themeGrid_settings">
+        <button class="theme-btn" onclick="applyTheme('')" id="tbtn-dark">
+          <div class="theme-preview" style="background:#0d0d1a;border-color:#e8c547;"><span style="color:#e8c547;">◼</span></div>
+          <div>MØRKT</div>
+        </button>
+        <button class="theme-btn" onclick="applyTheme('light')" id="tbtn-light">
+          <div class="theme-preview" style="background:#f5f0e8;border-color:#c8960a;"><span style="color:#c8960a;">◼</span></div>
+          <div>LYST</div>
+        </button>
+        <button class="theme-btn" onclick="applyTheme('nautical')" id="tbtn-nautical">
+          <div class="theme-preview" style="background:#0a1628;border-color:#5bc8d4;"><span style="color:#5bc8d4;">◼</span></div>
+          <div>NAUTISK</div>
+        </button>
+        <button class="theme-btn" onclick="applyTheme('retro')" id="tbtn-retro">
+          <div class="theme-preview" style="background:#fdf6e3;border-color:#e85d04;"><span style="color:#e85d04;">◼</span></div>
+          <div>RETRO</div>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px;padding:10px 12px;background:var(--surface);border:2px solid #333;border-radius:6px;cursor:pointer;" onclick="toggleMobileLarge()" id="mobileLargeRow">
+        <div id="mobileLargeToggle" style="width:44px;height:24px;border-radius:12px;background:#333;position:relative;flex-shrink:0;transition:background 0.2s;">
+          <div style="width:20px;height:20px;border-radius:50%;background:#888;position:absolute;top:2px;left:2px;transition:all 0.2s;" id="mobileLargeThumb"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text);">📱 STORE KNAPPER</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:2px;">Gælder alle temaer — forstørrer knapper, felter og faner</div>
+        </div>
+      </div>
+      <div class="save-msg" id="themeMsg" style="margin-top:4px;margin-bottom:4px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">SAMLINGENS OMFANG</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Angiv det højeste Jumbobog-nummer der findes, så mangel-listen viser fra #1 til dette nummer.</div>
+      <div class="max-row">
+        <input type="number" id="maxBookInput" placeholder="f.eks. 500" />
+        <button class="btn" onclick="saveMaxBook()">GEM</button>
+      </div>
+      <div id="maxBookMsg" style="font-size:12px;min-height:16px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">TITLER</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Opdaterer titler på alle bøger i samlingen ud fra den indbyggede titelliste. Brug dette én gang hvis du allerede har bøger registreret.</div>
+      <button class="btn-sm" onclick="syncTitles()">🔤 OPDATER TITLER PÅ ALLE BØGER</button>
+      <div class="save-msg" id="syncMsg" style="margin-top:8px;"></div>
+
+      <div class="section-title" style="margin-top:16px;">BACKUP & DATA</div>
+      <button class="btn-sm" onclick="exportData()">⬇ EKSPORTER SAMLING (.json)</button>
+      <label class="btn-sm" style="cursor:pointer;">
+        ⬆ IMPORTER SAMLING (.json)
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)" />
+      </label>
+
+      <div class="section-title" style="margin-top:16px;">BAGGRUNDSBILLEDE</div>
+      <div style="color:var(--dim);font-size:11px;margin-bottom:6px;">Vises som tapet bag appen. Indhold og knapper forbliver på sort baggrund.</div>
+      <label class="btn-sm" style="cursor:pointer;">
+        🖼 VÆLG BAGGRUNDSBILLEDE
+        <input type="file" accept="image/*" style="display:none;" onchange="setBgImage(event)" />
+      </label>
+      <button class="btn-sm" style="border-color:var(--dim);color:var(--muted);" onclick="clearBgImage()">✕ FJERN BAGGRUNDSBILLEDE</button>
+
+      <div class="section-title" style="margin-top:16px;color:var(--red);">FARLIGT OMRÅDE</div>
+      <button class="btn-sm" style="background:var(--gold);color:#000;margin-bottom:8px;" onclick="showTypeConflicts()">🔍 VIS BOGTYPE-KONFLIKTER</button>
+      <button class="btn-sm" style="background:#444;color:#fff;margin-bottom:8px;margin-left:6px;" onclick="showAllTypes()">📊 VIS ALLE BOGTYPER I DB</button>
+      <pre id="allTypesOut" style="font-size:11px;color:var(--gold);margin-bottom:8px;display:none;white-space:pre-wrap;"></pre>
+      <div id="typeConflictList" style="margin-bottom:12px;"></div>
+      <button class="btn-sm btn-danger" onclick="clearAll()">🗑 SLET HELE SAMLINGEN</button>
+    </div>
+  </div>
+
+</div><!-- end .body -->
+</div><!-- end #app-wrapper -->
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal" onclick="maybeClose(event)">
+  <div class="modal">
+    <h2>✏ REDIGER BOG</h2>
+    <div class="modal-form">
+      <input type="hidden" id="editId" />
+      <div class="field">
+        <label>BOGNUMMER</label>
+        <input type="number" id="editNumber" readonly style="opacity:0.5;cursor:not-allowed;" />
+      </div>
+      <div class="field">
+        <label>ANTAL (DUBLETTER)</label>
+        <div class="count-ctrl">
+          <button class="count-btn" onclick="changeEditCount(-1)">−</button>
+          <span class="count-val" id="editCountVal">1</span>
+          <button class="count-btn" onclick="changeEditCount(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>ÅR / UDGAVE</label>
+        <input type="text" id="editYear" placeholder="f.eks. 1987" />
+      </div>
+      <div class="field">
+        <label>TILSTAND</label>
+        <div class="condition-row" id="editCondRow">
+          <button class="cond-btn c1" onclick="setEditCond(1)"><div class="cond-num">1</div><div class="cond-label">UDSKIFT</div></button>
+          <button class="cond-btn c2" onclick="setEditCond(2)"><div class="cond-num">2</div><div class="cond-label">DÅRLIG</div></button>
+          <button class="cond-btn c3" onclick="setEditCond(3)"><div class="cond-num">3</div><div class="cond-label">RIMELIG</div></button>
+          <button class="cond-btn c4" onclick="setEditCond(4)"><div class="cond-num">4</div><div class="cond-label">GOD</div></button>
+          <button class="cond-btn c5" onclick="setEditCond(5)"><div class="cond-num">5</div><div class="cond-label">PERFEKT</div></button>
+        </div>
+      </div>
+      <div class="img-section">
+        <h3>BILLEDER — komprimeres automatisk</h3>
+        <div class="img-grid">
+          <div>
+            <div class="upload-box" id="editFrontBox">
+              <span id="editFrontPh">📷</span>
+              <img id="editFrontPre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'front')" />
+            </div>
+            <div class="upload-label">FORSIDE</div>
+          </div>
+          <div>
+            <div class="upload-box" id="editSpineBox">
+              <span id="editSpinePh">📷</span>
+              <img id="editSpinePre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'spine')" />
+            </div>
+            <div class="upload-label">RYG</div>
+          </div>
+          <div>
+            <div class="upload-box" id="editBackBox">
+              <span id="editBackPh">📷</span>
+              <img id="editBackPre" style="display:none;" />
+              <input type="file" accept="image/*" capture="environment" onchange="handleEditImage(event,'back')" />
+            </div>
+            <div class="upload-label">BAGSIDE</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress-wrap" id="editProgress">
+        <div class="progress-bar"><div class="progress-fill" id="editProgressFill"></div></div>
+        <div class="progress-text" id="editProgressText">UPLOADER...</div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="editCancelBtn" onclick="closeModal()">ANNULLER</button>
+        <button class="btn-sm btn-danger" id="editDeleteBtn" onclick="deleteFromModal()" style="width:auto;padding:11px 16px;">🗑 SLET</button>
+        <button class="btn btn-save" id="editSaveBtn" onclick="saveEdit()">GEM ÆNDRINGER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── SUPABASE ──────────────────────────────────────────────
+  const SUPABASE_URL = 'https://bfkmmyqjkgzymypgcikt.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const BUCKET = 'book-images';
+
+  // ── STATE ─────────────────────────────────────────────────
+  let books = [];
+  let bookGroups = {}; // number -> [book, book, ...]
+  let settings = { maxBook: null };
+  let addCount = 1, quickCount = 1, editCount = 1;
+  let quickType = 'jumbo';
+  let bulkType = 'jumbo';
+  let addCond = null, editCond = null;
+  let addType = 'jumbo';
+
+  function setAddType(type, btn) {
+    addType = type;
+    document.querySelectorAll('[id^="type-"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const isTheme = type === 'theme';
+    document.getElementById('addNumberField').style.display = '';
+    document.getElementById('addTitleField').style.display = isTheme ? '' : 'none';
+  }
+  let addImages = { front: null, spine: null, back: null }; // File objects
+  let editImages = { front: null, spine: null, back: null }; // File objects or existing URLs
+  let editExistingUrls = { front: null, spine: null, back: null };
+  let cardView = {};
+  let collectionFilter = 'all';
+  const DELETE_PASSWORD = 'Squash12!';
+  const condLabels = { 1:'UDSKIFT', 2:'DÅRLIG', 3:'RIMELIG', 4:'GOD', 5:'PERFEKT' };
+
+  // ── JUMBOBOG TITLER (kilde: dansketegneserier.dk) ─────────
+  const JUMBO_TITLES = {
+1:"Onkel Joakims trillioner",2:"Onkel Joakim på skattejagt",3:"Anders And i knibe...",4:"Anders And i topform",5:"Onkel Joakim jorden rundt",
+6:"Anders And og Bjørne-banden",7:"Onkel Joakim i hopla",8:"Anders And klarer ærterne",9:"Pas på pengene onkel Joakim",10:"Anders And vover livet",
+11:"Kvikke Mickey",12:"Onkel Joakim redder æren",13:"Anders And - den frygtløse ridder",14:"Rip, Rap og Rup gi'r aldrig op",15:"Onkel Joakim i perlehumør",
+16:"Bange Bjørnebanditter",17:"Stakkels onkel Anders",18:"Anders And fægter sig frem",19:"Anders Ands ønskedrøm",20:"Onkel Joakims glæder og sorger",
+21:"Gavmilde onkel Joakim",22:"Mickey Mouse for fuld musik",23:"Anders And i centrum",24:"Du er en nar Anders And",25:"Mickey på sporet",
+26:"Anders Ands særeste historier",27:"Anders And står til søs",28:"Stålanden Anders",29:"Mickey som detektiv",30:"Anders And og alle vennerne",
+31:"Anders And på et hængende hår",32:"Anders And flyver i luften",33:"Pas på ryggen Sorteper",34:"Stålanden går i fælden!",35:"Spil op, Anders And!",
+36:"Verden rundt med Mickey Mouse",37:"Ikke næbbet, Anders",38:"Anders And kommer ovenpå",39:"På hat med Mickey Mouse",40:"Stålanden flyver igen!",
+41:"Anders And i søgelyset",42:"Onkel Joakim – hvis penge kunne tale!",43:"Onkel Joakim på nye jagtmarker",44:"Mickey Mouse på farten",45:"Stålanden slår til",
+46:"Anders And giver bolden op",47:"Mickey holder dampen oppe",48:"Anders And - dagens helt",49:"Listige Mickey",50:"Anders And går til filmen",
+51:"Onkel Joakim og lykkemønten",52:"Mickey Mouse i rummet",53:"Fantastiske Anders And",54:"Anders And maler byen rød",55:"Mickey sprænger rammerne",
+56:"Onkel Joakim fortæller",57:"Tillykke Anders",58:"En olympisk mester",59:"Onkel Joakim på dybt vand...",60:"Penge på højkant",
+61:"Fuld af narrestreger",62:"Stålanden vinder altid",63:"Hæng i, Anders!",64:"Så til søs Anders!",65:"Anders i fin stil",
+66:"Anders And, glade dage",67:"Anders And, årets bilist",68:"Anders på sangskole",69:"Anders som cowboy",70:"Pas på bjørnen Anders",
+71:"Onkel Joakim - fluernes herre",72:"Delfiner til leje",73:"Fiskedysten",74:"Onkel Joakim i indianerlejr",75:"Hvad nu, onkel Joakim?",
+76:"Onkel Joakim på glatis",77:"Anders And i modvind",78:"Anders And på eventyr",79:"Gi' den gas - Anders",80:"Onkel Joakim har rejsefeber",
+81:"Hjælp - det spøger!",82:"Onkel Joakim ved roret",83:"Tillykke unger!",84:"Tåge-fyrsten vender tilbage!",85:"Mickey Mouse opdager Amerika",
+86:"Stålandens kikkert",87:"Det ser sort ud!",88:"Fuldmåne-skyggen",89:"EM-væddemål",90:"Sikke en samling!",
+91:"Anders And i Seoul!",92:"Tillykke Mickey!",93:"Onkel Joakim kommer til kort!",94:"Små slag, Mickey!",95:"Langt ude, Anders!",
+96:"I lovens navn",97:"Onkel Joakim på vulkaner",98:"Tilbage til fortiden",99:"Hikkekuren",100:"Nr. 100",
+101:"Det store væddeløb",102:"Tarzand",103:"Den falske tyv",104:"- en nøgleroman!",105:"Fægtemesteren",
+106:"Stålanden på spanden",107:"Terror i pengetanken",108:"Tågesnak",109:"Varulven er løs...",110:"Haj Mickey!",
+111:"Indianda And",112:"Gal i skralden!",113:"Et spring af dimensioner!",114:"Drømmehulen",115:"Pengenød",
+116:"Det er fedt, Anders!",117:"Højt at flyve...",118:"Jagten på stjernehjulet",119:"Hold fast, Anders!",120:"Rivaler i Paris",
+121:"Jagten på - ingenting!",122:"Kom igen, onkel Joakim",123:"Hjerteknuseren",124:"Hold hovedet koldt, Anders",125:"Miljøhelten",
+126:"Forklædt som stjerne",127:"En rigtig rystetur!",128:"Krystal-magi",129:"Hvor er du, skat?",130:"I totterne på Højben",
+131:"En 1. klasses bandit",132:"Stålanden i aktion",133:"Vågn op, Anders!",134:"Godt gået, Anders",135:"Guld i sigte",
+136:"Ud at køre med de...",137:"Skattejagten",138:"Stjernetur",139:"Heldige Anders",140:"Anders på opdagelse",
+141:"Jeg, en over-and",142:"Mickey - min helt",143:"Jubilæumsnummer",144:"Fed fremtid",145:"Onkel Joakim punger ud",
+146:"Vind i sejlet",147:"Panik i pyramiden",148:"Tankeoverføring",149:"Onkel Joakim... på spring",150:"150",
+151:"Skatte-smæk",152:"Sure miner",153:"Gode forbindelser",154:"En slem krukke",155:"Vampyrens Hemmelighed",
+156:"Lille gartner, hvad nu?",157:"Operation Kaktus",158:"Onkel Joakim går i luften",159:"Stålanden i krise",160:"Den tapre landsoldat",
+161:"Verdens modigste and",162:"Sømmet i bund, Anders!",163:"Gravrøverne",164:"Storsvindlerne",165:"Høj guldfeber",
+166:"Anders i Hollywood",167:"Rejsen til Jordens indre",168:"Asteroidejagten",169:"Styr dig, Anders!",170:"Zarens kurér",
+171:"Anders slår tonen an...",172:"Mærk verden, Anders!",173:"Tyven fra Bagdad",174:"Anders Løveand",175:"175",
+176:"Guldstøv på hjernen",177:"Den mystiske planet",178:"Bjørnebanditternes gyldne badedage",179:"Den uheldige viking",180:"Fremtidsbogen",
+181:"Kampen på Olympen",182:"Fortiden tur/retur",183:"Kuk i tyngdekraften",184:"Jorden rundt på 80 måder",185:"Døren til nye verdner",
+186:"Guld og gammelt jern",187:"Oraklets sendebud",188:"Al Crapyles skat",189:"To modige gringos",190:"Spøg til side",
+191:"Mareridt på Drømmeøen",192:"Præmiegrisen",193:"Jagten på sumpuhyret",194:"Ren nedtur",195:"Inka-skatten",
+196:"Hvem jager hvem?",197:"Kejser Joakim i knibe",198:"På et hængende hår",199:"Anders går til filmen",200:"200",
+201:"Panik i Tågedalen",202:"Mysteriet i spøgelsestoget",203:"Spilopmageren",204:"Panik i pengetanken",205:"For fuld skrue",
+206:"Den Magiske Tryllestav",207:"Den gale professor",208:"Det store opgør",209:"Iskold skattejagt",210:"De syv amuletter",
+211:"I løvens gab",212:"Anders And bryder isen",213:"Ren jammer",214:"Vulkanens hemmelighed",215:"Heksedoktorens hævn",
+216:"I windigos magt",217:"Alting går i fisk",218:"Onkel Joakim i skudlinien",219:"Ønskelyset",220:"5 x Anders",
+221:"Sandfurien",222:"Stålandens fødselsdag",223:"Det vilde ræs",224:"Kaos i kulden",225:"Flugten fra år 2000",
+226:"Mod nye mål",227:"Den Røde Pumpernickel",228:"Hjælp søges",229:"De magiske sten",230:"Flænserne fra det ydre rum",
+231:"Den næbbede papegøje",232:"Fodboldtosset",233:"Nærkontakt af anden grad",234:"Landet på den anden side",235:"Olympisk ballade",
+236:"Spøgelseshuset",237:"Jagten på den sølvskællede skarabæ",238:"Junglehelten",239:"I banditternes vold",240:"Istidsmissionen",
+241:"Den gådefulde maske",242:"Halløj på hotellet",243:"Den glemte dal",244:"Rablende gal",245:"Ulve-anden",
+246:"Blånæbs lykkemønt",247:"Kampen om marken",248:"Vilde Otto",249:"Jagten på den blå regn",250:"Mumien",
+251:"Tidsdøren",252:"Den store kriger",253:"På sporet af en myte",254:"Den store sensation",255:"Hemmelige agenter",
+256:"Ormehullet",257:"En hård kamp",258:"Roekrigen",259:"Landevejsrøveren",260:"En sikker vinder",
+261:"Det fjerde ønske",262:"Brændte fjer",263:"Den magiske salve",264:"Koks i karrusellen",265:"Nysekrigen",
+266:"På fallittens rand",267:"Uhyret fra Den Sorte Lagune",268:"Spøgelsesrotterne",269:"Den sorte kugle",270:"Ørkenvandringen",
+271:"Hav-anden",272:"Panik på Paradisæblevej",273:"Vildanden Anders",274:"Lykkebrillerne",275:"Kaptajn Sortskæg",
+276:"Den forsvundne stumfilm",277:"Kongernes sværd",278:"Mandarinen",279:"Magiens mester",280:"Fotokaos",
+281:"Lottomillionæren",282:"Helt til rotterne",283:"Vikinge-fejden",284:"Af banen!",285:"Anders den Glatte",
+286:"En sand helt",287:"Én på kassen",288:"Tyggegummikongen",289:"Den falske stemme",290:"Tålmodigheds-eksperten",
+291:"Bombizzen",292:"Lyttebøfferne",293:"Helt vildt",294:"Stjerner for en aften",295:"Sovetrynen",
+296:"Stjernestyrken",297:"Luftens helte",298:"Slughalsen",299:"Dobbeltgængeren",300:"300",
+301:"Ormeslottet",302:"Krystalklare drømme",303:"Farlig valuta",304:"Superblufferen",305:"Skatteopkræveren",
+306:"Skraldebøttetruslen",307:"Lykkebukserne",308:"Venskabsfesten!",309:"Kampen i sumpen",310:"Udekamp",
+311:"Skrumpegassen",312:"Forsvundet i paradis",313:"313",314:"Himmelsk rigdom",315:"Mysteriet i Flækkeby",
+316:"Mellem to hårde negle",317:"En skræmmende arv",318:"Dromedaren Kamelia",319:"Kørt helt ud i tovene",320:"Kort og brutal",
+321:"Den fødte leder",322:"Den forsvundne guldmine",323:"Tag dig nu sammen!",324:"Sørøverskatten",325:"Strandløven",
+326:"Turistfælden",327:"TV-shoppen",328:"Kong Anders",329:"Afsløret!",330:"Gravko-kaos",
+331:"Et uheldigt opgør",332:"Andland",333:"Helt elektrisk",334:"Pjækkesyg",335:"Alkymisten",
+336:"Opskriften på sejr",337:"Slaget om Andeby",338:"Fyr den af, Anders!",339:"Trange tider",340:"Møntens magt",
+341:"Farvesugeren",342:"Musen, anden og skønheden",343:"Tilbage til Bjørnebjerg",344:"Hurtige penge",345:"Stem på mig!",
+346:"En ulv efter pølser",347:"Sendt til tælling",348:"Kvik i pæren",349:"En festlig anledning",350:"Strandkaos",
+351:"SOS",352:"Ænder og dæmoner",353:"Agent dobbelt-A",354:"Krise? Hvilken krise?",355:"Robotrøvere",
+356:"Kommer Julemanden?",357:"Røveri i pengetanken",358:"Min første million",359:"Dræberbamserne",360:"Agent dobbelt-A slår til!",
+361:"Held... ...og uheld",362:"Mååååål!!",363:"Aaah... sommer!",364:"Sommer, sol og eventyr",365:"Fodbold, ferie og farlige ting",
+366:"Sommer på rov",367:"Sommer-sjov",368:"Heksehygge",369:"En god omgang",370:"Årets julegave",
+371:"Stål-andejagt",372:"Bjørnebanden tilbage",373:"Uhyret fra havets dyb",374:"Magisk forvandling",375:"Dobbelt gevær",
+376:"Skatten i skoven",377:"Arktisk eventyr",378:"Den fortryllede have",379:"Flugten fra den lukkede by",380:"Det store indbrud",
+381:"Onkel Joakims drøm",382:"Den gyldne nøgle",383:"Farlige efterretninger",384:"Monsternissen",385:"Superheltene",
+386:"Guldfeber igen",387:"Alt for mange penge",388:"Pengekisten",389:"Drømmenes dal",390:"Forbudt by",
+391:"Den røde diamant",392:"Kaos på krydstogt",393:"Spøgelsesskibet",394:"Ildmonsteret",395:"Ismonster",
+396:"Den forsvundne skat",397:"Julens trolddom",398:"En drøm af en jul",399:"Vinterferie",400:"400",
+401:"Bjørne-banden på rov",402:"Sommerferie",403:"Sommerglæder",404:"Sommerdrøm",405:"Lykkemønten",
+406:"Galaktisk omvej",407:"En uventet rejse",408:"Kom bare ind!",409:"Troldenes konge",410:"Stålanden i sigte",
+411:"Sommermagi",412:"Sommer og sejr",413:"En varm sommer",414:"Sol og sjov",415:"Heksen i skoven",
+416:"Den mystiske ø",417:"Arv og gæld",418:"Kampen om guldet",419:"Vintereventyr",420:"Årets julebog",
+421:"Julens magi",422:"Vinter og varme",423:"Snestorm i Andeby",424:"Tidernes løb",425:"Den hemmelige klub",
+426:"Forbandelsens gave",427:"Fodbolddrøm",428:"Sommer i Andeby",429:"Stor sommer",430:"Superanden",
+431:"Det store eventyr",432:"Kraftfuld magi",433:"Forbandede skatte",434:"Mysteriet om den forsvundne and",435:"Varm sommer",
+436:"En rigtig sommer",437:"Sommer på eventyr",438:"Anders And i centrum",439:"Onkel Joakims testamente",440:"Julestjerne",
+441:"Juleæventyr",442:"Vinterfantasi",443:"Iskolde eventyr",444:"Ny start",445:"Ny sæson",
+446:"Andeby genåbner",447:"Slut med det!",448:"Andeby-mysteriet",449:"Den store nedtur",450:"Jubilæum",
+451:"Privatdetektiv And",452:"Tidspiraterne",453:"Grillede ideer!",454:"Smil til kameraet!",455:"Badeænder",
+456:"På nye eventyr!",457:"Fyr og flamme",458:"Sommerfuglejagt",459:"Det store Andebyløb!",460:"Guld og glæde",
+461:"Nye horisonter",462:"Forårsfornøjelser",463:"Sommersjov",464:"Sæsonens bedste",465:"Hemmelige planer",
+466:"Farlige forbindelser",467:"Den store plan",468:"Hvad gemmer sig?",469:"Efterårseventyr",470:"Mørke hemmeligheder",
+471:"Vinterens komme",472:"Julebogen",473:"Frisk start",474:"Forårstegn",475:"Sommerens begyndelse",
+476:"Sol og vand",477:"Sommer, sommer!",478:"Hede dage",479:"Sommerafslutning",480:"Farverig efterår",
+481:"Heksejagt",482:"Vintervagt",483:"Julemagi",484:"Godt nytår",485:"Forårshåb",
+486:"Nye veje",487:"Sommerdage",488:"Solfyldte timer",489:"Det store ønske",490:"Eventyrlig sommer",
+491:"Efterårsblæst",492:"Hemmelig mission",493:"Julegave",494:"Nytårsaften",495:"Vinterlys",
+496:"Årets afslutning",497:"Forårsfest",498:"Sommer på vej",499:"Solskinsdag",500:"500",
+501:"Græske guder og gode råd",502:"Fodboldstjerner",503:"Olympiske håb",504:"Den skjulte ø",505:"Destination: Jordens indre",
+506:"Helte og mysterier",507:"Bjørne-banden 70 år",508:"Hexias barndom",509:"Stålmobilen",510:"På ski i Andeby",
+511:"Pengetankens hemmeligheder",512:"Vilde oplevelser",513:"Tidsportalen",514:"Sommerhelte",515:"Drømmeland",
+516:"Ved havet!",517:"En verdensomsejling under vand",518:"Skurkejagt",519:"Anders ass. træner",520:"Gyldent jubilæum",
+521:"Held i uheld",522:"Hvor er sneen?",523:"Eventyr i junglen",524:"Stålandens hemmelighed",525:"Grillmesteren fra Andeby",
+526:"Det gamle tempels hemmelighed",527:"Sommerdrømme",528:"Ferieminder",529:"Stålanden og Fabuland ser dobbelt!",530:"På jagt efter lykkemønten",
+531:"Spøgende spøgelser",532:"Mesterskurken",533:"Mysteriet på slottet",534:"Det antikke isfort",535:"Guldtårnet",
+536:"Nautilus vender tilbage!",537:"Skildpaddeøerne",538:"Fodboldfeber!",539:"Strandfesten",540:"Sjov på stranden",
+541:"Den store e-sport-finale!",542:"Kampen om Mars!",543:"Den magiske bog",544:"Onkel Joakim og uendelighedsmønten",
+545:"Pist væk!",546:"Dinoer i Andeby",547:"Sandokand søfareren",548:"Fantastiske fantasilliarder",549:"Mission dobbeltspil!",550:"Hvad nu hvis",
+551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E"
+  };
+  function getTitle(num) { return JUMBO_TITLES[String(num)] || JUMBO_TITLES[num] || ''; }
+
+  // ── IMAGE COMPRESSION ─────────────────────────────────────
+  function compressImage(file, maxPx = 900, quality = 0.82) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxPx || height > maxPx) {
+            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else { width = Math.round(width * maxPx / height); height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadImage(file, bookNumber, side) {
+    const compressed = await compressImage(file);
+    const path = `${bookNumber}/${side}_${Date.now()}.jpg`;
+    const { data, error } = await sb.storage.from(BUCKET).upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+    if (error) throw error;
+    const { data: urlData } = sb.storage.from(BUCKET).getPublicUrl(path);
+    return urlData.publicUrl;
+  }
+
+  async function deleteImageByUrl(url) {
+    if (!url) return;
+    try {
+      const path = url.split(`/${BUCKET}/`)[1];
+      if (path) await sb.storage.from(BUCKET).remove([path]);
+    } catch {}
+  }
+
+  // ── INIT ──────────────────────────────────────────────────
+  async function init() {
+    setLoading(true, 'HENTER SAMLING...');
+    await loadSettings();
+    await loadBooks(false);
+    setLoading(false);
+  }
+
+  function setLoading(show, text = '') {
+    const el = document.getElementById('loadingOverlay');
+    if (show) {
+      el.classList.remove('hidden');
+      document.getElementById('loadingText').textContent = text;
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
+  // ── SETTINGS ──────────────────────────────────────────────
+  async function loadSettings() {
+    loadTheme();
+    loadTitles();
+    const { data } = await sb.from('settings').select('*').eq('key', 'maxBook').maybeSingle();
+    if (data) {
+      settings.maxBook = Number(data.value);
+      document.getElementById('maxBookInput').value = settings.maxBook;
+    }
+  }
+
+  function saveTitles() {
+    const title = document.getElementById('titleInput').value.trim();
+    const subtitle = document.getElementById('subtitleInput').value.trim();
+    if (title) {
+      localStorage.setItem('appTitle', title);
+      document.getElementById('appTitle').textContent = title;
+      document.title = title;
+    }
+    if (subtitle) {
+      localStorage.setItem('appSubtitle', subtitle);
+    }
+    updateBookCountForView(currentView);
+    const msg = document.getElementById('titleMsg');
+    msg.textContent = '✓ Gemt';
+    msg.className = 'save-msg ok';
+    setTimeout(() => { msg.textContent = ''; }, 2000);
+  }
+
+  function loadTitles() {
+    const title = localStorage.getItem('appTitle');
+    const subtitle = localStorage.getItem('appSubtitle');
+    if (title) {
+      document.getElementById('appTitle').textContent = title;
+      document.title = title;
+      document.getElementById('titleInput').value = title;
+    } else {
+      document.getElementById('titleInput').value = document.getElementById('appTitle').textContent;
+    }
+    if (subtitle) {
+      document.getElementById('subtitleInput').value = subtitle;
+    }
+  }
+
+  function applyTheme(theme) {
+    const body = document.body;
+    ['theme-light','theme-nautical','theme-retro'].forEach(t => body.classList.remove(t));
+    if (theme) body.classList.add('theme-' + theme);
+    localStorage.setItem('appTheme', theme);
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById('tbtn-' + (theme || 'dark'));
+    if (activeBtn) activeBtn.classList.add('active');
+    const msg = document.getElementById('themeMsg');
+    if (msg) { msg.textContent = '✓ Tema gemt'; msg.className = 'save-msg ok'; setTimeout(() => msg.textContent = '', 2000); }
+  }
+
+  function toggleMobileLarge() {
+    const isOn = document.body.classList.toggle('mobile-large');
+    localStorage.setItem('mobileLarge', isOn ? '1' : '');
+    updateMobileLargeUI(isOn);
+  }
+
+  function updateMobileLargeUI(isOn) {
+    const toggle = document.getElementById('mobileLargeToggle');
+    const thumb = document.getElementById('mobileLargeThumb');
+    const row = document.getElementById('mobileLargeRow');
+    if (!toggle) return;
+    toggle.style.background = isOn ? 'var(--gold)' : '#333';
+    thumb.style.background = isOn ? 'var(--bg)' : '#888';
+    thumb.style.left = isOn ? '22px' : '2px';
+    row.style.borderColor = isOn ? 'var(--gold)' : '#333';
+  }
+
+  function loadTheme() {
+    const saved = localStorage.getItem('appTheme') || '';
+    applyTheme(saved);
+    const mobileLarge = localStorage.getItem('mobileLarge') === '1';
+    if (mobileLarge) document.body.classList.add('mobile-large');
+    updateMobileLargeUI(mobileLarge);
+  }
+
+  async function saveMaxBook() {
+    const val = document.getElementById('maxBookInput').value.trim();
+    const n = Number(val);
+    const msg = document.getElementById('maxBookMsg');
+    if (!val || isNaN(n) || n < 1) { msg.style.color='var(--red)'; msg.textContent='Indtast et gyldigt nummer'; setTimeout(()=>msg.textContent='',2500); return; }
+    await sb.from('settings').upsert({ key: 'maxBook', value: String(n) });
+    settings.maxBook = n;
+    msg.style.color='var(--green)'; msg.textContent=`Gemt — mangler vises fra #1 til #${n} ✓`;
+    setTimeout(()=>msg.textContent='',3000);
+  }
+
+  // ── LOAD BOOKS ────────────────────────────────────────────
+  async function loadBooks(showSpinner = true) {
+    if (showSpinner) setLoading(true, 'HENTER SAMLING...');
+    const { data, error } = await sb.from('books').select('*').order('number', { ascending: true }).order('is_primary', { ascending: false }).order('id', { ascending: true });
+    if (error) { console.error(error); if(showSpinner) setLoading(false); return; }
+    books = data || [];
+    // Gruppér KUN jumbobøger efter nummer
+    bookGroups = {};
+    for (const b of books) {
+      if (b.book_type && b.book_type !== 'jumbo') continue;
+      if (!bookGroups[b.number]) bookGroups[b.number] = [];
+      bookGroups[b.number].push(b);
+    }
+    // Sortér hver gruppe: højeste karakter først, derefter ældste år, derefter nyeste id
+    for (const num of Object.keys(bookGroups)) {
+      bookGroups[num].sort((a, b) => {
+        const ca = a.condition || 0, cb = b.condition || 0;
+        if (cb !== ca) return cb - ca;
+        const ya = parseInt(a.year) || 9999, yb = parseInt(b.year) || 9999;
+        if (ya !== yb) return ya - yb;
+        return b.id - a.id;
+      });
+    }
+    updateCount();
+    if (showSpinner) setLoading(false);
+    renderCollection();
+    ['theme','pocket','mammut','other'].forEach(t => renderType(t));
+  }
+
+  function updateCount() {
+    const jumboBooks = books.filter(b => !b.book_type || b.book_type === 'jumbo');
+    const titles = Object.keys(bookGroups).length;
+    const total = jumboBooks.length;
+    const dupli = total - titles;
+    let txt = `BOGSAMLING · ${titles} TITLER · ${total} BØGER`;
+    if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+    document.getElementById('bookCount').textContent = txt;
+    updateBookCountForView(currentView);
+  }
+
+  function updateBookCountForView(view) {
+    const typeMap = {
+      'collection': { label: 'JUMBOBØGER', filter: b => b.book_type === 'jumbo' || !b.book_type },
+      'pocket':     { label: 'LOMME-ANDEN', filter: b => b.book_type === 'pocket' },
+      'mammut':     { label: 'MAMMUTBØGER', filter: b => b.book_type === 'mammut' },
+      'theme':      { label: 'TEMABØGER',   filter: b => b.book_type === 'theme' },
+      'other':      { label: 'ØVRIGE',      filter: b => b.book_type === 'other' },
+    };
+    const info = typeMap[view];
+    if (!info) { document.getElementById('bookCount').textContent = localStorage.getItem('appSubtitle') || 'ANDERS AND SAMLING'; return; }
+    const filtered = books.filter(info.filter);
+    const groups = {};
+    filtered.forEach(b => {
+      const key = b.number || b.title || '?';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(b);
+    });
+    const titlesCount = Object.keys(groups).length;
+    const totalCount = filtered.length;
+    const dupliCount = totalCount - titlesCount;
+    let txt = `${titlesCount} TITLER · ${totalCount} BØGER`;
+    if (dupliCount > 0) txt += ` · ${dupliCount} DUBLETTER`;
+    document.getElementById('bookCount').textContent = txt;
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────
+  let currentView = 'collection';
+  function switchView(name, el) {
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    if (el) el.classList.add('active');
+    currentView = name;
+    updateBookCountForView(name);
+    if (name==='collection') renderCollection();
+    if (['theme','pocket','mammut','other'].includes(name)) renderType(name);
+  }
+
+  // ── SØGNING ───────────────────────────────────────────────
+  function doSearch(val) {
+    const res = document.getElementById('searchResult');
+    const num = val.trim();
+    if (!num) { res.innerHTML=''; return; }
+    const group = bookGroups[Number(num)];
+    if (group && group.length > 0) {
+      const book = group[0];
+      const yearHtml = book.year ? ` · ${book.year}` : '';
+      const titleHtml = book.title ? `<div style="color:var(--text);font-size:14px;margin-top:4px;">${book.title}</div>` : '';
+      const copiesHtml = group.map((b, i) => {
+        const imgSrc = b.front_image || b.spine_image || b.back_image;
+        const imgHtml = imgSrc ? `<img style="width:100%;border-radius:4px;object-fit:contain;background:#0d0d1a;max-height:180px;margin-top:6px;display:block;" src="${imgSrc}" />` : '<div style="height:80px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:11px;">INGEN BILLEDE</div>';
+        const condHtml = b.condition ? `<div style="margin-bottom:4px;">${condBadgeHtml(b.condition)}</div>` : '<div style="margin-bottom:4px;"><span class="badge" style="background:#222;color:var(--dim);">INGEN TILSTAND</span></div>';
+        const primaryHtml = b.is_primary ? `<div style="font-size:9px;color:var(--gold);margin-top:4px;">★ PRIMÆR</div>` : `<div style="font-size:9px;color:var(--dim);margin-top:4px;">Eksemplar ${i+1}</div>`;
+        return `<div style="flex:1;min-width:0;text-align:center;">${condHtml}${imgHtml}${primaryHtml}</div>`;
+      }).join('');
+      const copiesLabel = group.length > 1 ? `<div style="margin-bottom:8px;"><span class="dupli-badge">×${group.length} EKSEMPLARER</span></div>` : '';
+      res.innerHTML = `<div class="result-box found">
+        <div class="result-emoji">✅</div>
+        <div class="result-title">DU HAR DEN!</div>
+        <div class="result-sub">Jumbobog nr. ${book.number}${yearHtml}</div>
+        ${titleHtml}${copiesLabel}
+        <div style="display:flex;gap:8px;margin-top:8px;">${copiesHtml}</div>
+      </div>`;
+    } else {
+      const knownTitle = JUMBO_TITLES[String(num)] || JUMBO_TITLES[Number(num)] || "";
+      const titleHtml = knownTitle ? `<div style="color:var(--text);font-size:14px;margin-top:4px;">${knownTitle}</div>` : "";
+      res.innerHTML = `<div class="result-box not-found">
+        <div class="result-emoji">❌</div>
+        <div class="result-title">MANGLER!</div>
+        <div class="result-sub">Jumbobog nr. ${num} er ikke i din samling</div>
+        ${titleHtml}
+      </div>`;
+    }
+  }
+
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  async function rotateImage(bookId, imgKey, event) {
+    if (event) event.stopPropagation();
+    // Find bogen
+    const b = books.find(x => x.id === bookId);
+    if (!b || !b[imgKey]) return;
+    const src = b[imgKey];
+    // Find knappen og giv feedback
+    const btn = event ? event.target : null;
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    try {
+      // Hent og rotér billedet på canvas
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src.split('?')[0] + '?t=' + Date.now(); });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      // Konvertér til blob
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+      // Find sti og upload
+      const path = src.split('/' + BUCKET + '/')[1].split('?')[0];
+      const { error } = await sb.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (error) throw error;
+      // Opdatér URL i DB med cache-bust parameter (nyt timestamp)
+      const newUrl = src.split('?')[0] + '?t=' + Date.now();
+      await sb.from('books').update({ [imgKey]: newUrl }).eq('id', bookId);
+      // Genindlæs samlingen
+      await loadBooks(false);
+    } catch(e) {
+      showMsg('Fejl ved rotation: ' + e.message, 'err');
+      if (btn) { btn.textContent = '↻'; btn.disabled = false; }
+    }
+  }
+  function condBadgeHtml(c) {
+    if (!c) return '';
+    return `<span class="badge c${c}">${c} · ${condLabels[c]}</span>`;
+  }
+
+  // ── MASSETILFØJ ───────────────────────────────────────────
+  function parseBulk(input) {
+    const nums = new Set();
+    const maxNum = settings.maxBook || 999;
+    const parts = input.split(',');
+    for (let part of parts) {
+      part = part.trim();
+      if (!part) continue;
+      if (part.endsWith('+')) {
+        const start = parseInt(part);
+        if (!isNaN(start)) for (let n = start; n <= maxNum; n++) nums.add(n);
+      } else if (part.includes('-')) {
+        const [a, b] = part.split('-').map(s => parseInt(s.trim()));
+        if (!isNaN(a) && !isNaN(b)) for (let n = a; n <= b; n++) nums.add(n);
+      } else {
+        const n = parseInt(part);
+        if (!isNaN(n)) nums.add(n);
+      }
+    }
+    return [...nums].sort((a,b) => a-b);
+  }
+
+  function previewBulk() {
+    const input = document.getElementById('bulkInput').value;
+    const preview = document.getElementById('bulkPreview');
+    if (!input.trim()) { preview.textContent = ''; return; }
+    const nums = parseBulk(input);
+    const existing = new Set(books.filter(b => (b.book_type||'jumbo') === bulkType).map(b => b.number));
+    const newNums = nums.filter(n => !existing.has(n));
+    const skipNums = nums.filter(n => existing.has(n));
+    let txt = `${newNums.length} nye bøger tilføjes`;
+    if (skipNums.length) txt += ` · ${skipNums.length} findes allerede (springes over)`;
+    preview.textContent = txt;
+    preview.style.color = newNums.length > 0 ? 'var(--gold)' : 'var(--muted)';
+  }
+
+  async function bulkAdd() {
+    const input = document.getElementById('bulkInput').value;
+    if (!input.trim()) return;
+    const nums = parseBulk(input);
+    const existing = new Set(books.filter(b => (b.book_type||'jumbo') === bulkType).map(b => b.number));
+    const newNums = nums.filter(n => !existing.has(n));
+    if (!newNums.length) {
+      document.getElementById('bulkMsg').textContent = 'Alle bøger findes allerede!';
+      document.getElementById('bulkMsg').className = 'save-msg err';
+      setTimeout(() => document.getElementById('bulkMsg').textContent = '', 3000);
+      return;
+    }
+    const btn = document.getElementById('bulkAddBtn');
+    btn.disabled = true; btn.textContent = 'TILFØJER...';
+    const msg = document.getElementById('bulkMsg');
+    try {
+      const rows = newNums.map(n => ({ number: n, is_primary: true, book_type: bulkType, title: bulkType === 'jumbo' ? getTitle(n) : '', year: '', condition: null, front_image: null, spine_image: null, back_image: null }));
+      // Indsæt i batches af 50
+      for (let i = 0; i < rows.length; i += 50) {
+        const batch = rows.slice(i, i + 50);
+        const { error } = await sb.from('books').insert(batch);
+        if (error) throw error;
+        btn.textContent = `TILFØJER... ${Math.min(i+50, rows.length)}/${rows.length}`;
+      }
+      document.getElementById('bulkInput').value = '';
+      document.getElementById('bulkPreview').textContent = '';
+      msg.textContent = `✓ ${newNums.length} bøger tilføjet!`;
+      msg.className = 'save-msg ok';
+      await loadBooks(false);
+    } catch(e) {
+      msg.textContent = 'Fejl: ' + e.message;
+      msg.className = 'save-msg err';
+    } finally {
+      btn.disabled = false; btn.textContent = 'TILFØJ ALLE';
+      setTimeout(() => { msg.textContent = ''; msg.className = 'save-msg'; }, 4000);
+    }
+  }
+
+  // ── ANTAL & TILSTAND ──────────────────────────────────────
+  function changeCount(d) { addCount=Math.max(1,addCount+d); document.getElementById('countVal').textContent=addCount; }
+  function changeQuickCount(d) { quickCount=Math.max(1,quickCount+d); document.getElementById('quickCountVal').textContent=quickCount; }
+
+  function setBulkType(type, btn) {
+    bulkType = type;
+    document.querySelectorAll('[id^="btype-"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function setQuickType(type, btn) {
+    quickType = type;
+    document.querySelectorAll('[id^="qtype-"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('quickTitleField').style.display = type === 'theme' ? '' : 'none';
+    document.getElementById('quickNumber').placeholder = 'f.eks. 42';
+  }
+  function changeEditCount(d) { editCount=Math.max(1,editCount+d); document.getElementById('editCountVal').textContent=editCount; }
+
+  function setAddCond(v) {
+    addCond = addCond===v ? null : v;
+    document.querySelectorAll('#addCondRow .cond-btn').forEach((b,i)=>b.classList.toggle('active',addCond===i+1));
+  }
+  function setEditCond(v) {
+    editCond = editCond===v ? null : v;
+    document.querySelectorAll('#editCondRow .cond-btn').forEach((b,i)=>b.classList.toggle('active',editCond===i+1));
+  }
+
+  // ── BILLEDER (preview) ────────────────────────────────────
+  function handleImage(e, side) {
+    const file = e.target.files[0]; if (!file) return;
+    addImages[side] = file;
+    showPreview(side, file, false);
+  }
+
+  function handleEditImage(e, side) {
+    const file = e.target.files[0]; if (!file) return;
+    editImages[side] = file;
+    showPreview(side, file, true);
+  }
+
+  function showPreview(side, file, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const pre = document.getElementById(preId);
+      pre.src = e.target.result; pre.style.display='block';
+      document.getElementById(phId).style.display='none';
+      document.getElementById(boxId).classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function showUrlPreview(side, url, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    const pre = document.getElementById(preId);
+    pre.src = url; pre.style.display='block';
+    document.getElementById(phId).style.display='none';
+    document.getElementById(boxId).classList.add('has-image');
+  }
+
+  function clearPreview(side, isEdit) {
+    const cap = side.charAt(0).toUpperCase()+side.slice(1);
+    const preId = isEdit ? 'edit'+cap+'Pre' : side+'Preview';
+    const phId  = isEdit ? 'edit'+cap+'Ph'  : side+'Placeholder';
+    const boxId = isEdit ? 'edit'+cap+'Box' : side+'Box';
+    document.getElementById(preId).style.display='none';
+    document.getElementById(phId).style.display='block';
+    document.getElementById(boxId).classList.remove('has-image');
+  }
+
+  // ── HURTIG TILFØJ ─────────────────────────────────────────
+  async function quickAdd() {
+    const num = document.getElementById('quickNumber').value.trim();
+    if (!num) return;
+    const isTheme = quickType === 'theme';
+    const manualTitle = isTheme ? document.getElementById('quickTitle').value.trim() : null;
+    if (isTheme && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
+    const title = isTheme ? manualTitle : (quickType === 'jumbo' ? getTitle(Number(num)) : null);
+    const btn = document.getElementById('quickAddBtn');
+    btn.disabled=true; btn.textContent='GEMMER...';
+    const { error } = await sb.from('books').insert({ number:Number(num), is_primary:false, title:title||'', year:'', condition:null, book_type:quickType, front_image:null, spine_image:null, back_image:null });
+    btn.disabled=false; btn.textContent='TILFØJ';
+    if (error) { showMsg('Fejl: '+error.message,'err'); return; }
+    document.getElementById('quickNumber').value='';
+    if (isTheme) document.getElementById('quickTitle').value='';
+    showMsg(`Tilføjet ✓`,'ok');
+    await loadBooks(false);
+  }
+
+  // ── TILFØJ MED DETALJER ───────────────────────────────────
+  async function addBook() {
+    const isTheme = addType === 'theme';
+    const num = document.getElementById('addNumber').value.trim();
+    const manualTitle = isTheme ? document.getElementById('addTitle').value.trim() : null;
+    const title = isTheme ? manualTitle : getTitle(Number(num));
+    const year = document.getElementById('addYear').value.trim();
+    if (!num) { showMsg('Indtast et bognummer!','err'); return; }
+    if (isTheme && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
+
+    const btn = document.getElementById('addBtn');
+    btn.disabled=true; btn.textContent='GEMMER...';
+    const progress = document.getElementById('addProgress');
+    progress.classList.add('active');
+
+    try {
+      const urls = { front_image: null, spine_image: null, back_image: null };
+      const sides = [['front','front_image'],['spine','spine_image'],['back','back_image']];
+      let done = 0;
+      const bookRef = num || title;
+      for (const [side, key] of sides) {
+        if (addImages[side]) {
+          setProgress('add', done/3*100, `UPLOADER ${side.toUpperCase()}BILLEDE...`);
+          urls[key] = await uploadImage(addImages[side], bookRef, side);
+        }
+        done++;
+        setProgress('add', done/3*100, done===3 ? 'GEMMER...' : `UPLOADER...`);
+      }
+
+      const { error } = await sb.from('books').insert({ number: num ? Number(num) : null, is_primary:false, count:1, title, year, condition:addCond, book_type: addType, ...urls });
+      if (error) throw error;
+
+      // reset
+      document.getElementById('addNumber').value='';
+      if (isTheme) document.getElementById('addTitle').value='';
+      document.getElementById('addYear').value='';
+      ['front','spine','back'].forEach(s=>{ addImages[s]=null; clearPreview(s,false); });
+      addCount=1; document.getElementById('countVal').textContent=1;
+      addCond=null; document.querySelectorAll('#addCondRow .cond-btn').forEach(b=>b.classList.remove('active'));
+      showMsg('Gemt! ✓','ok');
+      await loadBooks(false);
+    } catch(e) {
+      showMsg('Fejl: '+e.message,'err');
+    } finally {
+      btn.disabled=false; btn.textContent='TILFØJ BOG';
+      progress.classList.remove('active');
+    }
+  }
+
+  function setProgress(id, pct, text) {
+    document.getElementById(id+'ProgressFill').style.width = pct+'%';
+    document.getElementById(id+'ProgressText').textContent = text;
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('saveMsg');
+    el.textContent=text; el.className='save-msg '+type;
+    setTimeout(()=>{ el.textContent=''; el.className='save-msg'; }, 3000);
+  }
+
+  // ── TYPE FILTERS ──────────────────────────────────────────
+  const typeFilters = { theme:'all', pocket:'all', mammut:'all', other:'all' };
+
+  function setTypeFilter(type, filter, btn) {
+    typeFilters[type] = filter;
+    const view = document.getElementById('view-' + type);
+    view.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderType(type);
+  }
+
+  function renderType(type) {
+    const filter = typeFilters[type] || 'all';
+    const typeBooks = books.filter(b => (b.book_type || 'jumbo') === type);
+
+    // Gruppering: temabøger → dublet kun hvis SAMME titel+årstal (case-insensitivt)
+    // Alle andre typer → individuelt (key = id)
+    const groups = {};
+    if (type === 'theme') {
+      for (const b of typeBooks) {
+        const titleKey = (b.title || '').trim().toLowerCase();
+        const yearKey = (b.year || '').trim();
+        // Kun grupper hvis begge felter er udfyldt og ens
+        const key = (titleKey && yearKey) ? ('ty_' + titleKey + '_' + yearKey) : ('id_' + b.id);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(b);
+      }
+      // Sortér inden for hver gruppe: bedste tilstand øverst
+      for (const k of Object.keys(groups)) {
+        groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
+      }
+    } else {
+      for (const b of typeBooks) {
+        groups[b.id] = [b];
+      }
+    }
+
+    let keys = Object.keys(groups);
+    // Filtrér
+    if (filter==='replace') keys = keys.filter(k => groups[k][0].condition===1);
+    if (filter==='incomplete') keys = keys.filter(k => !groups[k][0].front_image&&!groups[k][0].spine_image&&!groups[k][0].back_image);
+
+    const infoEl = document.getElementById(type+'Info');
+    infoEl.textContent = `${keys.length} BØGER VISES`;
+
+    if (type === 'pocket' || type === 'theme') {
+      // Lomme-anden og Temabøger: gruppér efter årstal med overskrifter
+      renderByYear(type, groups, keys);
+    } else {
+      const gridEl = document.getElementById(type+'Grid');
+      if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
+      keys.sort((a, b) => {
+        const ba = groups[a][0], bb = groups[b][0];
+        return (ba.number||0) - (bb.number||0);
+      });
+      gridEl.innerHTML = keys.map(k => { const b = {...groups[k][0], _viewType: type}; return renderCard(b, groups[k], groups[k].length); }).join('');
+    }
+  }
+
+  function renderByYear(type, groups, keys) {
+    const gridEl = document.getElementById(type+'Grid');
+    if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
+    // Gruppér efter årstal
+    const byYear = {};
+    for (const k of keys) {
+      const b = groups[k][0];
+      const yr = b.year || 'Ukendt år';
+      if (!byYear[yr]) byYear[yr] = [];
+      byYear[yr].push(k);
+    }
+    const years = Object.keys(byYear).sort();
+    // Sortér inden for hvert år: efter nummer (hvis findes), ellers titel
+    for (const yr of years) {
+      byYear[yr].sort((a, b) => {
+        const ba = groups[a][0], bb = groups[b][0];
+        const na = ba.number, nb = bb.number;
+        if (na != null && nb != null) return na - nb;
+        if (na != null) return -1;
+        if (nb != null) return 1;
+        return (ba.title||'').localeCompare(bb.title||'');
+      });
+    }
+    gridEl.innerHTML = years.map(yr =>
+      '<div style="margin-top:16px;">' +
+      '<div style="color:var(--gold);font-size:11px;font-weight:700;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:4px;margin-bottom:8px;">' + yr + '</div>' +
+      '<div class="collection-grid">' + byYear[yr].map(k => { const b = {...groups[k][0], _viewType: type}; return renderCard(b, groups[k], groups[k].length); }).join('') + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderCard(b, group, cnt) {
+    const number = b.number;
+    const imgs = [b.front_image, b.spine_image, b.back_image].filter(Boolean);
+    const hasImg = imgs.length > 0;
+    const viewKey = (b._viewType||'collection') + '_' + b.id;
+    const vi = Math.min(cardView[viewKey] || 0, imgs.length - 1);
+    const imgSrc = imgs[vi];
+    const labels = [];
+    if (b.front_image) labels.push('FOR');
+    if (b.spine_image) labels.push('RYG');
+    if (b.back_image) labels.push('BAG');
+    const _vk2 = (b._viewType||'collection')+'_'+b.id;
+    const _navOverlay = labels.length > 1 ? `<div class="img-nav img-nav-left" onclick="event.stopPropagation();cycleImg('${_vk2}',${imgs.length},-1)"><span>‹</span></div><div class="img-center" onclick="event.stopPropagation();openLightbox('${imgSrc}')"></div><div class="img-nav img-nav-right" onclick="event.stopPropagation();cycleImg('${_vk2}',${imgs.length},1)"><span>›</span></div>` : (imgSrc ? `<div class="img-center" onclick="event.stopPropagation();openLightbox('${imgSrc}')"></div>` : '');
+    const imgHtml = imgSrc ? `<div class="img-wrap"><img class="book-img" src="${imgSrc}" loading="lazy" style="display:block;" />${_navOverlay}</div>` : '<div style="margin-top:auto;"></div>';
+    const _labelBar = labels.length > 1 ? `<div class="flip-hint">${labels.map((l,i)=>i===vi?`<b style="color:var(--gold)">${l}</b>`:l).join(' · ')}</div>` : '<div class="flip-hint"></div>';
+    const flipHtml = _labelBar;
+    const badges = [];
+    if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleTypeCard('${b.id}',${cnt},event)">×${cnt} ›</span>`);
+    if (b.condition) badges.push(condBadgeHtml(b.condition));
+    if (!hasImg) badges.push(`<span class="badge incomplete">MANGLER BILLEDER</span>`);
+    const imgKeys = ['front_image','spine_image','back_image'];
+    const currentImgKey = imgKeys.filter(k=>b[k])[vi] || null;
+    const rotateBtn = currentImgKey ? `<button class="rotate-btn" onclick="event.stopPropagation();rotateImage(${b.id},'${currentImgKey}',event)" title="Rotér billede 90°">↻</button>` : '';
+    // Altid vis badge-rækken (fast højde for alignment)
+    const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${rotateBtn}</div>`;
+    const isTheme = b.book_type === 'theme';
+    const isMammut = b.book_type === 'mammut';
+    let topHtml = '', midHtml = '';
+    if (isTheme) {
+      // Temabøger: titel øverst (guld), fallback til årstal hvis ingen titel
+      const themeLabel = b.title ? b.title : (b.year ? 'Temabog ' + b.year : 'Temabog');
+      topHtml = `<div class="book-number">${themeLabel}</div>`;
+      midHtml = (b.number != null && b.number > 0) ? `<div class="book-title">Nummer ${b.number}</div>` : '';
+    } else if (isMammut) {
+      // Mammutbøger: "Mammutbog nr. X" øverst, ingen titel
+      topHtml = b.number != null ? `<div class="book-number">Mammutbog nr. ${b.number}</div>` : '';
+      midHtml = '';
+    } else if (b.book_type === 'pocket') {
+      // Lomme-anden: kun "Lomme-anden nr. X", ingen titel
+      topHtml = b.number != null ? `<div class="book-number">Lomme-anden nr. ${b.number}</div>` : '';
+      midHtml = '';
+    } else if (b.book_type === 'other') {
+      // Øvrige: kun "Øvrig nr. X", ingen titel
+      topHtml = b.number != null ? `<div class="book-number">Øvrig nr. ${b.number}</div>` : (b.title ? `<div class="book-number">${b.title}</div>` : '');
+      midHtml = '';
+    } else {
+      // Jumbobøger
+      const displayTitle = b.title || getTitle(b.number);
+      const numLabel = b.number != null ? `Jumbobog nr. ${b.number}` : (b.title || '');
+      topHtml = b.number != null ? `<div class="book-number">${numLabel}</div>` : '';
+      midHtml = displayTitle ? `<div class="book-title">${displayTitle}</div>` : '';
+    }
+    const vkEscaped = (b._viewType||'collection') + '_' + b.id;
+    return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''}">
+      <div class="card-header">${topHtml}<button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button></div>
+      ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket')?`<div class="book-year">${b.year}</div>`:''}
+      ${badgeHtml}${imgHtml}${flipHtml}
+    </div>`;
+  }
+
+  // ── SAMLING ───────────────────────────────────────────────
+  function setFilter(f, el) {
+    collectionFilter=f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    renderCollection();
+  }
+
+  // cardDupliIdx tracks which duplicate is shown per book number
+  let cardDupliIdx = {};
+
+  function cycleDupli(number, total, event) {
+    event.stopPropagation();
+    cardDupliIdx[number] = ((cardDupliIdx[number] || 0) + 1) % total;
+    cardView = {};
+    renderCollection();
+  }
+
+  function cycleTypeCard(bookId, total, event) {
+    event.stopPropagation();
+    // For type-faner: genrenderer aktiv fane
+    const activeView = document.querySelector('.view.active');
+    if (activeView) {
+      const type = activeView.id.replace('view-','');
+      if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+    }
+  }
+
+  async function makePrimary(id, number, event) {
+    event.stopPropagation();
+    // Set all books with this number to is_primary=false, then set this one to true
+    await sb.from('books').update({ is_primary: false }).eq('number', number);
+    await sb.from('books').update({ is_primary: true }).eq('id', id);
+    await loadBooks(false);
+  }
+
+  function renderCollection() {
+    const grid = document.getElementById('collectionGrid');
+    // Build list of primary books per number (or currently shown dupli)
+    // Kun jumbobøger (book_type = 'jumbo' eller null/undefined)
+    const jumboNums = new Set(books.filter(b => !b.book_type || b.book_type === 'jumbo').map(b => b.number));
+    let numbers = Object.keys(bookGroups).map(Number).filter(n => jumboNums.has(n)).sort((a,b)=>a-b);
+
+    if (collectionFilter==='replace') numbers = numbers.filter(n => {
+      const group = bookGroups[n];
+      return group.some(b => b.condition === 1) && !group.some(b => b.condition > 1);
+    });
+    if (collectionFilter==='incomplete') numbers = numbers.filter(n => bookGroups[n].every(b=>!b.front_image&&!b.spine_image&&!b.back_image));
+
+    // MANGLER filter: brug renderMissing visningen
+    if (collectionFilter==='missing') {
+      // Sæt collectionGrid til normal display så info+legende ikke grid-placeres
+      grid.style.display = 'block';
+      grid.innerHTML = `
+        <div style="margin-bottom:12px;">
+          <div id="missingInfo" style="color:var(--muted);font-size:12px;margin-bottom:8px;line-height:1.8;"></div>
+          <div class="missing-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>Mangler helt</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--orange);"></div>Ønskes udskiftet (tilstand 1)</div>
+          </div>
+        </div>
+        <div class="missing-grid" id="missingGrid"></div>`;
+      renderMissing();
+      document.getElementById('collectionInfo').textContent = '';
+      return;
+    }
+
+    grid.style.display = '';  // Nulstil til CSS grid
+    document.getElementById('collectionInfo').textContent = `${numbers.length} BØGER VISES`;
+    if (!numbers.length) { grid.innerHTML='<div class="empty-msg">Ingen bøger matcher filteret.</div>'; return; }
+
+    grid.innerHTML = numbers.map(number => {
+      const group = bookGroups[number];
+      const cnt = group.length;
+      const idx = Math.min(cardDupliIdx[number] || 0, cnt - 1);
+      const b = group[idx];
+
+      const imgs = [b.front_image, b.spine_image, b.back_image].filter(Boolean);
+      const hasImg = imgs.length > 0;
+      const vi = Math.min(cardView['collection_' + b.id] || 0, imgs.length - 1);
+      const imgSrc = imgs[vi];
+      const labels = [];
+      if (b.front_image) labels.push('FOR');
+      if (b.spine_image) labels.push('RYG');
+      if (b.back_image) labels.push('BAG');
+      const _navOverlayColl = labels.length > 1 ? `<div class="img-nav img-nav-left" onclick="event.stopPropagation();cycleImg('collection_${b.id}',${imgs.length},-1)"><span>‹</span></div><div class="img-center" onclick="event.stopPropagation();openLightbox('${imgSrc}')"></div><div class="img-nav img-nav-right" onclick="event.stopPropagation();cycleImg('collection_${b.id}',${imgs.length},1)"><span>›</span></div>` : (imgSrc ? `<div class="img-center" onclick="event.stopPropagation();openLightbox('${imgSrc}')"></div>` : '');
+      const imgHtml = imgSrc ? `<div class="img-wrap"><img class="book-img" src="${imgSrc}" loading="lazy" style="display:block;" />${_navOverlayColl}</div>` : '<div style="margin-top:auto;"></div>';
+      const _labelBarColl = labels.length > 1 ? `<div class="flip-hint">${labels.map((l,i)=>i===vi?`<b style="color:var(--gold)">${l}</b>`:l).join(' · ')}</div>` : '<div class="flip-hint"></div>';
+      const flipHtml = _labelBarColl;
+
+      const badges = [];
+      if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleDupli(${number},${cnt},event)" title="Klik for at se næste eksemplar">×${cnt} &rsaquo;</span>`);
+      if (b.condition) badges.push(condBadgeHtml(b.condition));
+      if (!hasImg) badges.push(`<span class="badge incomplete">MANGLER BILLEDER</span>`);
+      // Rotér-knap for det aktuelle billede
+      const imgKeys = [['front_image','for'],['spine_image','ryg'],['back_image','bag']];
+      const currentImgKey = imgKeys.filter(([k])=>b[k])[vi]?.[0] || null;
+      const rotateBtn = currentImgKey ? `<button class="rotate-btn" onclick="event.stopPropagation();rotateImage(${b.id},'${currentImgKey}',event)" title="Rotér billede 90°">↻</button>` : '';
+      // Altid vis badge-rækken (fast højde for alignment)
+    const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${rotateBtn}</div>`;
+
+      const displayTitle = b.title || getTitle(b.number);
+      const titleHtml = displayTitle ? `<div class="book-title">${displayTitle}</div>` : '';
+
+      // Show which duplicate we're viewing + make primary button
+      // dupliNav altid renderet (fast højde)
+      const dupliNav = `<div style="font-size:10px;color:var(--muted);margin-top:4px;min-height:18px;display:flex;align-items:center;">
+        ${cnt > 1 ? `<span>Eksemplar ${idx+1} af ${cnt}</span>` : '<span></span>'}
+      </div>`;
+
+      return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''}">
+        <div class="card-header"><div class="book-number">Jumbobog nr. ${b.number}</div><button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button></div>
+        ${titleHtml}${b.year?`<div class="book-year">${b.year}</div>`:''}
+        ${badgeHtml}${dupliNav}${imgHtml}${flipHtml}
+      </div>`;
+    }).join('');
+  }
+
+  function cycleImg(key, total, dir=1) {
+    if (total<=1) return;
+    cardView[key]=(((cardView[key]||0)+dir)+total)%total;
+    // Genrender korrekt fane
+    const activeView = document.querySelector('.view.active');
+    const type = activeView ? activeView.id.replace('view-','') : 'collection';
+    if (type === 'collection') renderCollection();
+    else if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+  }
+
+  function deleteBookLabel(b) {
+    const t = b.book_type || 'jumbo';
+    const num = b.number != null ? 'nr. ' + b.number : '';
+    const yr = b.year ? ' (' + b.year + ')' : '';
+    const title = b.title ? ' — ' + b.title : '';
+    if (t === 'jumbo')   return 'Jumbobog ' + num + (b.title ? title : '') + yr;
+    if (t === 'pocket')  return 'Lomme-anden ' + num + yr;
+    if (t === 'mammut')  return 'Mammutbog ' + num + yr;
+    if (t === 'theme')   return 'Temabog' + (num ? ' ' + num : '') + (b.title ? title : '') + yr;
+    if (t === 'other')   return 'Øvrig' + (num ? ' ' + num : '') + yr;
+    return num + yr;
+  }
+
+  async function deleteBook(id) {
+    const b = books.find(b=>b.id===id); if(!b) return;
+    if (!confirm('Slet ' + deleteBookLabel(b) + ' fra samlingen?')) return;
+    setLoading(true,'SLETTER...');
+    await Promise.all([
+      deleteImageByUrl(b.front_image),
+      deleteImageByUrl(b.spine_image),
+      deleteImageByUrl(b.back_image)
+    ]);
+    await sb.from('books').delete().eq('id', id);
+    await loadBooks(false);
+    setLoading(false);
+  }
+
+  // ── EDIT MODAL ────────────────────────────────────────────
+  function openEdit(id) {
+    const b = books.find(b=>b.id===id); if(!b) return;
+    document.getElementById('editId').value=id;
+    document.getElementById('editNumber').value=b.number;
+    // titel sættes automatisk fra JUMBO_TITLES
+    document.getElementById('editYear').value=b.year||'';
+    editCount=b.count||1; document.getElementById('editCountVal').textContent=editCount;
+    editCond=b.condition||null;
+    document.querySelectorAll('#editCondRow .cond-btn').forEach((btn,i)=>btn.classList.toggle('active',editCond===i+1));
+    editImages = { front:null, spine:null, back:null };
+    editExistingUrls = { front:b.front_image||null, spine:b.spine_image||null, back:b.back_image||null };
+    ['front','spine','back'].forEach(s=>{
+      const url = editExistingUrls[s];
+      if (url) showUrlPreview(s,url,true); else clearPreview(s,true);
+    });
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  async function deleteFromModal() {
+    const id = Number(document.getElementById('editId').value);
+    const b = books.find(b=>b.id===id); if(!b) return;
+    if (!confirm('Slet ' + deleteBookLabel(b) + ' permanent?')) return;
+    closeModal();
+    await deleteBook(id);
+  }
+
+  function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+  function maybeClose(e) { if(e.target===document.getElementById('editModal')) closeModal(); }
+
+  async function saveEdit() {
+    const id = Number(document.getElementById('editId').value);
+    const b = books.find(b=>b.id===id); if(!b) return;
+    const saveBtn = document.getElementById('editSaveBtn');
+    const cancelBtn = document.getElementById('editCancelBtn');
+    saveBtn.disabled=true; saveBtn.textContent='GEMMER...'; cancelBtn.disabled=true;
+    const progress = document.getElementById('editProgress');
+    progress.classList.add('active');
+
+    try {
+      const urls = {
+        front_image: editExistingUrls.front,
+        spine_image: editExistingUrls.spine,
+        back_image: editExistingUrls.back
+      };
+      const sides = [['front','front_image'],['spine','spine_image'],['back','back_image']];
+      let done=0;
+      for (const [side, key] of sides) {
+        if (editImages[side]) {
+          setProgress('edit', done/3*100, `UPLOADER ${side.toUpperCase()}BILLEDE...`);
+          if (editExistingUrls[side]) await deleteImageByUrl(editExistingUrls[side]);
+          urls[key] = await uploadImage(editImages[side], b.number, side);
+        }
+        done++;
+        setProgress('edit', done/3*100, done===3?'GEMMER...':'UPLOADER...');
+      }
+
+      await sb.from('books').update({
+        title: getTitle(b.number),
+        year: document.getElementById('editYear').value.trim(),
+        count: editCount,
+        condition: editCond,
+        ...urls
+      }).eq('id', id);
+
+      closeModal();
+      await loadBooks(false);
+    } catch(e) {
+      alert('Fejl: '+e.message);
+    } finally {
+      saveBtn.disabled=false; saveBtn.textContent='GEM ÆNDRINGER'; cancelBtn.disabled=false;
+      progress.classList.remove('active');
+    }
+  }
+
+  // ── MANGLER ───────────────────────────────────────────────
+  function renderMissing() {
+    const grid = document.getElementById('missingGrid');
+    const info = document.getElementById('missingInfo');
+    if (books.length===0) { info.textContent='Ingen bøger registreret endnu.'; grid.innerHTML=''; return; }
+    const jumboOnly = books.filter(b => !b.book_type || b.book_type === 'jumbo');
+    const nums = jumboOnly.map(b=>b.number);
+    const have = new Set(nums);
+    // Ønskes udskiftet: kun hvis der IKKE findes et eksemplar med karakter > 1
+    const replaceSet = new Set(
+      Object.keys(bookGroups)
+        .map(Number)
+        .filter(n => bookGroups[n].some(b => b.condition === 1) && !bookGroups[n].some(b => b.condition > 1))
+    );
+    const max = settings.maxBook || (nums.length ? Math.max(...nums) : 556);
+    let missingCount=0, replaceCount=0;
+    const items=[];
+    for (let i=1; i<=max; i++) {
+      if (!have.has(i)) { items.push({n:i,type:'absent'}); missingCount++; }
+      else if (replaceSet.has(i)) { items.push({n:i,type:'replace'}); replaceCount++; }
+    }
+    info.innerHTML = `Viser #1–#${max} (${books.length} registrerede)<br>
+      Mangler helt: <b style="color:var(--red)">${missingCount}</b> &nbsp;·&nbsp;
+      Ønskes udskiftet: <b style="color:var(--orange)">${replaceCount}</b>`;
+    if (!items.length) {
+      grid.innerHTML='<div style="grid-column:span 4;color:var(--green);text-align:center;padding:24px;font-weight:700;font-size:14px;">SAMLINGEN ER KOMPLET! 🎉</div>';
+    } else {
+      grid.innerHTML=items.map(item=>`<div class="missing-num ${item.type}">#${String(item.n).padStart(3,'0')}</div>`).join('');
+    }
+  }
+
+  // ── SLET ALT ──────────────────────────────────────────────
+  async function syncTitles() {
+    const btn = document.querySelector('[onclick="syncTitles()"]');
+    const msg = document.getElementById('syncMsg');
+    btn.disabled = true; btn.textContent = 'OPDATERER...';
+    let updated = 0, skipped = 0;
+    try {
+      // Process in batches of 50
+      const booksToUpdate = books.filter(b => getTitle(b.number));
+      for (let i = 0; i < booksToUpdate.length; i += 50) {
+        const batch = booksToUpdate.slice(i, i+50);
+        for (const b of batch) {
+          await sb.from('books').update({ title: getTitle(b.number) }).eq('id', b.id);
+          updated++;
+        }
+        msg.className = 'save-msg ok';
+        msg.textContent = `Opdateret ${updated} af ${booksToUpdate.length}...`;
+      }
+      skipped = books.length - booksToUpdate.length;
+      msg.className = 'save-msg ok';
+      msg.textContent = `✓ ${updated} titler opdateret, ${skipped} uændrede`;
+      await loadBooks(false);
+    } catch(e) {
+      msg.className = 'save-msg err';
+      msg.textContent = 'Fejl: ' + e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '🔤 OPDATER TITLER PÅ ALLE BØGER';
+    }
+  }
+
+
+
+
+  const TYPE_LABELS = { jumbo:'Jumbobog', pocket:'Lomme-anden', mammut:'Mammutbog', theme:'Temabog', other:'Øvrig' };
+
+  function showAllTypes() {
+    const out = document.getElementById('allTypesOut');
+    out.style.display = 'block';
+    const counts = {};
+    for (const b of books) {
+      const t = b.book_type || '(null/jumbo)';
+      counts[t] = (counts[t] || 0) + 1;
+    }
+    out.textContent = Object.entries(counts)
+      .sort((a,b) => b[1]-a[1])
+      .map(([t,n]) => n + 'x  "' + t + '"')
+      .join('\n');
+  }
+
+  function showTypeConflicts() {
+    const el = document.getElementById('typeConflictList');
+    if (!books || !books.length) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--muted)">Samlingen indlæses stadig — prøv igen.</p>';
+      return;
+    }
+    // Gruppér alle bøger efter nummer
+    const byNum = {};
+    for (const b of books) {
+      if (!byNum[b.number]) byNum[b.number] = [];
+      byNum[b.number].push(b);
+    }
+    // Behold kun numre med flere bogtyper
+    const conflicts = Object.entries(byNum)
+      .filter(([n, bs]) => new Set(bs.map(b => b.book_type||'jumbo')).size > 1)
+      .sort((a,b) => Number(a[0]) - Number(b[0]));
+
+    if (!conflicts.length) {
+      el.innerHTML = '<p style="font-size:12px;color:var(--green)">✓ Ingen bogtype-konflikter fundet.</p>';
+      return;
+    }
+
+    // Byg HTML uden template literals med singlequotes
+    let html = '<p style="font-size:12px;color:var(--gold);margin-bottom:8px;">' + conflicts.length + ' numre har poster under flere bogtyper:</p>';
+    for (const [num, bs] of conflicts) {
+      html += '<div style="border:1px solid #444;border-radius:6px;margin-bottom:12px;">';
+      html += '<div style="background:#222;padding:8px 12px;font-size:12px;font-weight:700;color:var(--gold);">Nr. ' + num + ' — ' + bs.length + ' poster</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;">';
+      for (const b of bs) {
+        const t = b.book_type || 'jumbo';
+        const img = b.front_image || b.spine_image || b.back_image || '';
+        const condTxt = ['','UDSKIFT','DÅRLIG','RIMELIG','GOD','PERFEKT'][b.condition||0] || '';
+        html += '<div style="width:140px;flex-shrink:0;border:1px solid #333;margin:4px;">';
+        if (img) {
+          html += '<img src="' + img + '" style="width:100%;height:110px;object-fit:cover;display:block;" />';
+        } else {
+          html += '<div style="width:100%;height:110px;background:#333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">INTET BILLEDE</div>';
+        }
+        html += '<div style="padding:6px 8px;">';
+        html += '<div style="font-size:10px;color:var(--muted);">ID: ' + b.id + '</div>';
+        html += '<div style="font-size:11px;color:var(--gold);">' + TYPE_LABELS[t] + '</div>';
+        if (b.year) html += '<div style="font-size:10px;color:var(--muted);">' + b.year + '</div>';
+        if (condTxt) html += '<div style="font-size:10px;color:var(--muted);">' + condTxt + '</div>';
+        html += '<select data-id="' + b.id + '" onchange="changeBookType(this)" style="margin-top:6px;width:100%;font-size:11px;padding:4px;background:var(--bg);color:var(--text);border:1px solid #555;border-radius:3px;">';
+        for (const val of Object.keys(TYPE_LABELS)) {
+          html += '<option value="' + val + '"' + (t === val ? ' selected' : '') + '>' + TYPE_LABELS[val] + '</option>';
+        }
+        html += '</select>';
+        html += '</div></div>';
+      }
+      html += '</div></div>';
+    }
+    el.innerHTML = html;
+  }
+
+  async function changeBookType(selectEl) {
+    const id = selectEl.getAttribute('data-id');
+    const newType = selectEl.value;
+    selectEl.disabled = true;
+    const { error } = await sb.from('books').update({ book_type: newType }).eq('id', id);
+    if (error) { selectEl.disabled = false; alert('Fejl: ' + error.message); return; }
+    await loadBooks(false);
+    showTypeConflicts();
+  }
+  async function clearAll() {
+    const pw = prompt('Indtast kodeord for at slette hele samlingen:');
+    if (pw===null) return;
+    if (pw!==DELETE_PASSWORD) { alert('Forkert kodeord — samlingen er ikke slettet.'); return; }
+    if (!confirm('Kodeord accepteret. Slet HELE samlingen permanent?')) return;
+    setLoading(true, 'SLETTER BILLEDER...');
+
+    // Hent ALLE filer fra Storage bucket og slet dem
+    try {
+      const { data: files } = await sb.storage.from(BUCKET).list('', { limit: 10000 });
+      if (files && files.length > 0) {
+        // Hent undermapper (én per bognummer)
+        const allPaths = [];
+        for (const folder of files) {
+          if (folder.name) {
+            const { data: subFiles } = await sb.storage.from(BUCKET).list(folder.name, { limit: 10000 });
+            if (subFiles) {
+              subFiles.forEach(f => allPaths.push(`${folder.name}/${f.name}`));
+            }
+          }
+        }
+        if (allPaths.length > 0) {
+          // Slet i batches af 100
+          for (let i = 0; i < allPaths.length; i += 100) {
+            await sb.storage.from(BUCKET).remove(allPaths.slice(i, i + 100));
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('Storage sletning fejl:', e);
+    }
+
+    setLoading(true, 'SLETTER DATABASE...');
+    await sb.rpc('delete_all_books');
+    await loadBooks(false);
+    setLoading(false);
+    alert('Samlingen er slettet.');
+  }
+
+  // ── EXPORT / IMPORT ───────────────────────────────────────
+  function exportData() {
+    const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jumbo-samling.json'; a.click();
+  }
+
+  async function importData(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        const imp = JSON.parse(ev.target.result);
+        if (!Array.isArray(imp)) throw new Error('Ugyldigt format');
+        if (!confirm(`Importer ${imp.length} bøger? Eksisterende bøger med samme nummer tilføjes som dubletter.`)) return;
+        setLoading(true, 'IMPORTERER...');
+        const existingNums = new Set(books.map(b => b.number));
+        // Sæt is_primary: første gang vi ser et nummer = primær
+        const seenNums = new Set();
+        const toInsert = imp.map(b => {
+          const isPrimary = !existingNums.has(b.number) && !seenNums.has(b.number);
+          seenNums.add(b.number);
+          return { ...b, is_primary: isPrimary, count: undefined };
+        });
+        let done = 0;
+        for (let i = 0; i < toInsert.length; i += 20) {
+          const batch = toInsert.slice(i, i + 20);
+          await sb.from('books').insert(batch);
+          done += batch.length;
+          setLoading(true, `IMPORTERER... ${done}/${toInsert.length}`);
+        }
+        await loadBooks(false);
+        setLoading(false);
+        alert(`✅ Importeret ${toInsert.length} bøger!`);
+      } catch(err) {
+        setLoading(false);
+        alert('Fejl: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ── BAGGRUNDSBILLEDE ─────────────────────────────────────
+  const BG_KEY = 'jumbo_bg_image';
+
+  function setBgImage(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result;
+      localStorage.setItem(BG_KEY, b64);
+      applyBgImage(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyBgImage(b64) {
+    // Sæt billede på body — contain sikrer at hele billedet altid er synligt
+    // Tomt rum rundt om fyldes med temaets baggrundsfarve (var(--bg))
+    document.body.style.backgroundImage = `url('${b64}')`;
+    document.body.style.backgroundSize = 'contain';
+    document.body.style.backgroundPosition = 'center center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.getElementById('app-wrapper').style.background = 'transparent';
+    document.querySelector('.body').style.background = 'rgba(13,13,26,0.82)';
+  }
+
+  function clearBgImage() {
+    localStorage.removeItem(BG_KEY);
+    document.body.style.backgroundImage = '';
+    document.body.style.backgroundAttachment = '';
+    document.getElementById('app-wrapper').style.background = '';
+    document.querySelector('.body').style.background = 'var(--bg)';
+  }
+
+  function loadBgImage() {
+    const saved = localStorage.getItem(BG_KEY);
+    if (saved) applyBgImage(saved);
+  }
+
+  // ── START ─────────────────────────────────────────────────
+  loadBgImage();
+  init();
+</script>
+
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="" />
+</div>
+</body>
+</html>
