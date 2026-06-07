@@ -289,6 +289,10 @@
     /* LÆST */
     .read-badge { display:inline-flex;align-items:center;gap:4px;background:var(--green);color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 7px;border-radius:3px;cursor:pointer;user-select:none;border:none;font-family:'Courier New',monospace; }
     .read-badge.unread { background:transparent;border:1px solid #444;color:var(--muted); }
+    .read-card-btn { background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;font-family:'Courier New',monospace;white-space:nowrap;transition:all 0.15s; }
+    .read-card-btn.read-active { background:var(--green);border-color:var(--green);color:#fff; }
+    .read-card-btn:hover { border-color:var(--green);color:var(--green); }
+    .read-card-btn.read-active:hover { background:#2a5540;border-color:#2a5540; }
     .book-card.is-read { opacity:0.65; }
     .book-card.is-read .book-number { text-decoration:line-through;opacity:0.7; }
 
@@ -654,13 +658,10 @@
         <label>TITEL</label>
         <input type="text" id="editTitle" placeholder="Bogens titel" />
       </div>
-      <div class="field">
-        <label>ANTAL (DUBLETTER)</label>
-        <div class="count-ctrl">
-          <button class="count-btn" onclick="changeEditCount(-1)">−</button>
-          <span class="count-val" id="editCountVal">1</span>
-          <button class="count-btn" onclick="changeEditCount(1)">+</button>
-        </div>
+      <div class="field" id="editDupliField" style="display:none;">
+        <label>DUBLETTER</label>
+        <div id="editDupliInfo" style="font-size:13px;color:var(--gold);margin-bottom:6px;"></div>
+        <div id="editDupliSelector" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       </div>
       <div class="field">
         <label>ÅR / UDGAVE</label>
@@ -705,13 +706,21 @@
           </div>
         </div>
       </div>
+      <div class="field" id="editRotateField" style="display:none;">
+        <label>ROTÉR BILLEDE</label>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm" onclick="rotateEditImage('front_image')" id="rotFront" style="display:none;">↻ FORSIDE</button>
+          <button class="btn-sm" onclick="rotateEditImage('spine_image')" id="rotSpine" style="display:none;">↻ RYG</button>
+          <button class="btn-sm" onclick="rotateEditImage('back_image')" id="rotBack" style="display:none;">↻ BAGSIDE</button>
+        </div>
+      </div>
+      <div class="field" id="editRotateField">
+        <label>ROTÉR BILLEDE</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="editRotateBtns"></div>
+      </div>
       <div class="progress-wrap" id="editProgress">
         <div class="progress-bar"><div class="progress-fill" id="editProgressFill"></div></div>
         <div class="progress-text" id="editProgressText">UPLOADER...</div>
-      </div>
-      <div class="field">
-        <label>LÆST</label>
-        <button id="editReadToggle" onclick="toggleEditRead()" class="read-badge unread" style="width:100%;justify-content:center;padding:10px;">MARKER SOM LÆST</button>
       </div>
       <div class="modal-btns">
         <button class="btn-cancel" id="editCancelBtn" onclick="closeModal()">ANNULLER</button>
@@ -1859,9 +1868,10 @@
     if (!hasImg) badges.push(`<span class="badge incomplete">MANGLER BILLEDER</span>`);
     const imgKeys = ['front_image','spine_image','back_image'];
     const currentImgKey = imgKeys.filter(k=>b[k])[vi] || null;
-    const rotateBtn = currentImgKey ? `<button class="rotate-btn" onclick="event.stopPropagation();rotateImage(${b.id},'${currentImgKey}',event)" title="Rotér billede 90°">↻</button>` : '';
-    // Altid vis badge-rækken (fast højde for alignment)
-    const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${rotateBtn}</div>`;
+    // Læst-knap på kortet (erstatter rotér)
+    const isRead = !!b.is_read;
+    const readBtn = `<button class="read-card-btn${isRead?' read-active':''}" onclick="event.stopPropagation();toggleRead(${b.id})" title="${isRead?'Markér som ikke læst':'Markér som læst'}">${isRead?'✓':''} LÆST</button>`;
+    const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${readBtn}</div>`;
     const isTheme = b.book_type === 'theme';
     const isMammut = b.book_type === 'mammut';
     let topHtml = '', midHtml = '';
@@ -1893,7 +1903,7 @@
       midHtml = displayTitle ? `<div class="book-title">${displayTitle}</div>` : '';
     }
     const vkEscaped = (b._viewType||'collection') + '_' + b.id;
-    return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''}">
+    return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''} ${isRead?'is-read':''}">
       <div class="card-header">${topHtml}<button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button></div>
       ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket')?`<div class="book-year">${b.year}</div>`:''}
       ${badgeHtml}${imgHtml}${flipHtml}
@@ -1916,6 +1926,61 @@
     cardDupliIdx[number] = ((cardDupliIdx[number] || 0) + 1) % total;
     cardView = {};
     renderCollection();
+  }
+
+  async function rotateEditImage(bookId, imgKey) {
+    const b = books.find(b => b.id === bookId);
+    if (!b || !b[imgKey]) return;
+    const btns = document.getElementById('editRotateBtns');
+    const oldText = btns.innerHTML;
+    btns.innerHTML = '<span style="font-size:11px;color:var(--gold);">ROTERER...</span>';
+    await rotateImage(bookId, imgKey, null);
+    // Genindlæs preview
+    const freshB = books.find(b => b.id === bookId);
+    if (freshB) {
+      const side = imgKey.replace('_image','');
+      showUrlPreview(side, freshB[imgKey], true);
+      editExistingUrls[side] = freshB[imgKey];
+    }
+    // Opdater rotér-knapper
+    const updatedB = books.find(b => b.id === bookId);
+    btns.innerHTML = [['front_image','FORSIDE'],['spine_image','RYG'],['back_image','BAGSIDE']]
+      .filter(([k]) => updatedB && updatedB[k])
+      .map(([k,lbl]) => `<button class="btn-sm" onclick="rotateEditImage(${bookId},'${k}')">↻ ${lbl}</button>`)
+      .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder</span>';
+  }
+
+  async function rotateEditImage(bookId, imgKey) {
+    const b = books.find(b => b.id === bookId);
+    if (!b || !b[imgKey]) return;
+    const btns = document.getElementById('editRotateBtns');
+    btns.innerHTML = '<span style="font-size:11px;color:var(--gold);">ROTERER...</span>';
+    await rotateImage(bookId, imgKey, null);
+    const updatedB = books.find(b => b.id === bookId);
+    if (updatedB) {
+      const side = imgKey.replace('_image','');
+      showUrlPreview(side, updatedB[imgKey], true);
+      editExistingUrls[side] = updatedB[imgKey];
+    }
+    if (btns) btns.innerHTML = [['front_image','FORSIDE'],['spine_image','RYG'],['back_image','BAGSIDE']]
+      .filter(([k]) => updatedB && updatedB[k])
+      .map(([k,lbl]) => `<button class="btn-sm" onclick="rotateEditImage(${bookId},'${k}')">↻ ${lbl}</button>`)
+      .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder</span>';
+  }
+
+  async function toggleRead(id) {
+    const b = books.find(b => b.id === id);
+    if (!b) return;
+    const newVal = !b.is_read;
+    b.is_read = newVal; // optimistisk opdatering
+    // Genrender aktivt view
+    const activeView = document.querySelector('.view.active');
+    if (activeView) {
+      const type = activeView.id.replace('view-','');
+      if (type === 'collection') renderCollection();
+      else if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+    }
+    await sb.from('books').update({ is_read: newVal }).eq('id', id);
   }
 
   function cycleTypeCard(bookId, total, event) {
@@ -1991,16 +2056,12 @@
       const flipHtml = _labelBarColl;
 
       const badges = [];
-      if (b.is_read) badges.push('<span class="read-badge" title="Læst">✓ LÆST</span>');
       if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleDupli(${number},${cnt},event)" title="Klik for at se næste eksemplar">×${cnt} &rsaquo;</span>`);
       if (b.condition) badges.push(condBadgeHtml(b.condition));
       if (!hasImg) badges.push(`<span class="badge incomplete">MANGLER BILLEDER</span>`);
-      // Rotér-knap for det aktuelle billede
-      const imgKeys = [['front_image','for'],['spine_image','ryg'],['back_image','bag']];
-      const currentImgKey = imgKeys.filter(([k])=>b[k])[vi]?.[0] || null;
-      const rotateBtn = currentImgKey ? `<button class="rotate-btn" onclick="event.stopPropagation();rotateImage(${b.id},'${currentImgKey}',event)" title="Rotér billede 90°">↻</button>` : '';
-      // Altid vis badge-rækken (fast højde for alignment)
-    const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${rotateBtn}</div>`;
+      const jumboIsRead = !!b.is_read;
+      const jumboReadBtn = `<button class="read-card-btn${jumboIsRead?' read-active':''}" onclick="event.stopPropagation();toggleRead(${b.id})">${jumboIsRead?'✓ ':''} LÆST</button>`;
+      const badgeHtml = `<div class="card-badges"><div class="badges-left">${badges.join('')}</div>${jumboReadBtn}</div>`;
 
       const displayTitle = b.title || getTitle(b.number);
       const titleHtml = displayTitle ? `<div class="book-title">${displayTitle}</div>` : '';
@@ -2065,21 +2126,49 @@
     document.getElementById('editTitleField').style.display = showTitle ? '' : 'none';
     if (showTitle) document.getElementById('editTitle').value = b.title || '';
     document.getElementById('editYear').value=b.year||'';
-    editCount=b.count||1; document.getElementById('editCountVal').textContent=editCount;
     editCond=b.condition||null;
     document.querySelectorAll('#editCondRow .cond-btn').forEach((btn,i)=>btn.classList.toggle('active',editCond===i+1));
-    // Læst-knap
     editIsRead = !!b.is_read;
-    const rtBtn = document.getElementById('editReadToggle');
-    rtBtn.textContent = editIsRead ? '✓ LÆST' : 'MARKER SOM LÆST';
-    rtBtn.className = editIsRead ? 'read-badge' : 'read-badge unread';
     editImages = { front:null, spine:null, back:null };
     editExistingUrls = { front:b.front_image||null, spine:b.spine_image||null, back:b.back_image||null };
     ['front','spine','back'].forEach(s=>{
       const url = editExistingUrls[s];
       if (url) showUrlPreview(s,url,true); else clearPreview(s,true);
     });
+    // Dublet-vælger: find alle eksemplarer med samme type+nummer+(år for pocket)
+    const siblings = books.filter(x => {
+      if ((x.book_type||'jumbo') !== (b.book_type||'jumbo')) return false;
+      if (b.book_type === 'pocket') return x.number === b.number && x.year === b.year && (x.pocket_series||'onkel_joakim') === (b.pocket_series||'onkel_joakim');
+      if (b.book_type === 'theme') return (x.title||'').toLowerCase() === (b.title||'').toLowerCase() && x.year === b.year;
+      return x.number === b.number;
+    });
+    const dupliField = document.getElementById('editDupliField');
+    const dupliSel = document.getElementById('editDupliSelector');
+    const dupliInfo = document.getElementById('editDupliInfo');
+    if (siblings.length > 1) {
+      dupliField.style.display = '';
+      dupliInfo.textContent = siblings.length + ' eksemplarer';
+      dupliSel.innerHTML = siblings.map((s,i) => {
+        const condLabel = s.condition ? ['','UDSKIFT','DÅRLIG','RIMELIG','GOD','PERFEKT'][s.condition] : 'INGEN';
+        const isActive = s.id === b.id;
+        return `<button class="filter-btn${isActive?' active':''}" onclick="switchEditDupli(${s.id})" style="font-size:11px;">${i+1}. ${condLabel}${s.year?' · '+s.year:''}</button>`;
+      }).join('');
+    } else {
+      dupliField.style.display = 'none';
+    }
+    // Rotér-knapper: vis kun for billeder der eksisterer
+    const rotBtns = document.getElementById('editRotateBtns');
+    rotBtns.innerHTML = [['front_image','FORSIDE'],['spine_image','RYG'],['back_image','BAGSIDE']]
+      .filter(([k]) => b[k])
+      .map(([k,lbl]) => `<button class="btn-sm" onclick="rotateEditImage(${b.id},'${k}')">↻ ${lbl}</button>`)
+      .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder at rotere</span>';
     document.getElementById('editModal').classList.add('open');
+  }
+
+  function switchEditDupli(id) {
+    // Skift til et andet eksemplar i edit modal uden at lukke
+    closeModal();
+    openEdit(id);
   }
 
   async function deleteFromModal() {
@@ -2088,13 +2177,6 @@
     if (!confirm('Slet ' + deleteBookLabel(b) + ' permanent?')) return;
     closeModal();
     await deleteBook(id);
-  }
-
-  function toggleEditRead() {
-    editIsRead = !editIsRead;
-    const btn = document.getElementById('editReadToggle');
-    btn.textContent = editIsRead ? '✓ LÆST' : 'MARKER SOM LÆST';
-    btn.className = editIsRead ? 'read-badge' : 'read-badge unread';
   }
 
   function closeModal() { document.getElementById('editModal').classList.remove('open'); }
@@ -2134,7 +2216,6 @@
       await sb.from('books').update({
         title: editedTitle,
         year: document.getElementById('editYear').value.trim(),
-        count: editCount,
         condition: editCond,
         is_read: editIsRead,
         ...urls
