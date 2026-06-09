@@ -1106,45 +1106,83 @@
     renderCollection();
     // Migrer: pocket-bøger uden pocket_series får onkel_joakim som default i hukommelsen
     books.forEach(b => { if (b.book_type === 'pocket' && !b.pocket_series) b.pocket_series = 'onkel_joakim'; });
-    // Migrer: pocket-bøger uden pocket_series defaultes til onkel_joakim i hukommelsen
-    books.forEach(b => { if (b.book_type === 'pocket' && !b.pocket_series) b.pocket_series = 'onkel_joakim'; });
-    ['theme','pocket','mammut','other'].forEach(t => renderType(t));
+    ['theme','pocket','mammut','other'].forEach(t => { try { renderType(t); } catch(e) { console.warn('renderType error for', t, e); } });
   }
 
   function updateCount() {
-    const jumboBooks = books.filter(b => !b.book_type || b.book_type === 'jumbo');
-    const titles = Object.keys(bookGroups).length;
-    const total = jumboBooks.length;
-    const dupli = total - titles;
-    let txt = `BOGSAMLING · ${titles} TITLER · ${total} BØGER`;
-    if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
-    document.getElementById('bookCount').textContent = txt;
     updateBookCountForView(currentView);
   }
 
   function updateBookCountForView(view) {
-    const typeMap = {
-      'collection': { label: 'JUMBOBØGER', filter: b => b.book_type === 'jumbo' || !b.book_type },
-      'pocket':     { label: 'LOMME-ANDEN', filter: b => b.book_type === 'pocket' },
-      'mammut':     { label: 'MAMMUTBØGER', filter: b => b.book_type === 'mammut' },
-      'theme':      { label: 'TEMABØGER',   filter: b => b.book_type === 'theme' },
-      'other':      { label: 'ØVRIGE',      filter: b => b.book_type === 'other' },
-    };
-    const info = typeMap[view];
-    if (!info) { document.getElementById('bookCount').textContent = localStorage.getItem('appSubtitle') || 'ANDERS AND SAMLING'; return; }
-    const filtered = books.filter(info.filter);
-    const groups = {};
-    filtered.forEach(b => {
-      const key = b.number || b.title || '?';
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(b);
-    });
-    const titlesCount = Object.keys(groups).length;
-    const totalCount = filtered.length;
-    const dupliCount = totalCount - titlesCount;
-    let txt = `${titlesCount} TITLER · ${totalCount} BØGER`;
-    if (dupliCount > 0) txt += ` · ${dupliCount} DUBLETTER`;
-    document.getElementById('bookCount').textContent = txt;
+    const el = document.getElementById('bookCount');
+
+    if (!el) return;
+    if (view === 'collection') {
+      const jumboBooks = books.filter(b => !b.book_type || b.book_type === 'jumbo');
+      const total = jumboBooks.length;
+      const titles = Object.keys(bookGroups).length;
+      const dupli = total - titles;
+      const max = settings.maxBook || 0;
+      const owned = new Set(jumboBooks.map(b => b.number));
+      const missing = max > 0 ? Array.from({length: max}, (_,i) => i+1).filter(n => !owned.has(n)).length : null;
+      let txt = `${total} BØGER · ${dupli} DUBLETTER`;
+      if (missing !== null) txt += ` · ${missing} MANGLER`;
+      el.textContent = txt;
+
+    } else if (view === 'pocket') {
+      // Lomme-Anden: vis kun den aktive serie
+      const serieBooks = books.filter(b => b.book_type === 'pocket' && (b.pocket_series||'onkel_joakim') === activePocketSeries);
+      const total = serieBooks.length;
+      // Grupper på år+nummer for dubletter
+      const grps = {};
+      serieBooks.forEach(b => { const k=(b.year||'0')+'_'+(b.number||'0'); if(!grps[k])grps[k]=0; grps[k]++; });
+      const uniqueTitles = Object.keys(grps).length;
+      const dupli = total - uniqueTitles;
+      // Mangler fra katalog
+      const catalog = POCKET_CATALOG[activePocketSeries];
+      let missing = null;
+      if (catalog) {
+        const owned = new Set(serieBooks.map(b => (b.year||'')+'_'+(b.number||'')));
+        missing = Object.entries(catalog).reduce((acc,[yr,nums]) => acc + nums.filter(n => !owned.has(yr+'_'+n)).length, 0);
+      }
+      const SERIES_LABELS = {onkel_joakim:'Onkel Joakim', mickey_mouse:'Mickey Mouse', bjoerne_banden:'Bjørne Banden'};
+      let txt = `${SERIES_LABELS[activePocketSeries]||''} · ${total} BØGER · ${dupli} DUBLETTER`;
+      if (missing !== null) txt += ` · ${missing} MANGLER`;
+      el.textContent = txt;
+
+    } else if (view === 'mammut') {
+      const filtered = books.filter(b => b.book_type === 'mammut');
+      const total = filtered.length;
+      const grps = new Set(filtered.map(b => b.number));
+      const dupli = total - grps.size;
+      let txt = `${total} BØGER`;
+      if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      el.textContent = txt;
+
+    } else if (view === 'theme') {
+      const filtered = books.filter(b => b.book_type === 'theme');
+      const total = filtered.length;
+      const grps = {};
+      filtered.forEach(b => {
+        const k = (b.title||'').toLowerCase()+'_'+(b.year||'');
+        if(!grps[k])grps[k]=0; grps[k]++;
+      });
+      const unique = Object.keys(grps).length;
+      const dupli = total - unique;
+      let txt = `${total} BØGER`;
+      if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      el.textContent = txt;
+
+    } else if (view === 'other') {
+      const filtered = books.filter(b => b.book_type === 'other');
+      const total = filtered.length;
+      const dupli = 0; // øvrige vises individuelt
+      let txt = `${total} BØGER`;
+      el.textContent = txt;
+
+    } else {
+      if (el) el.textContent = localStorage.getItem('appSubtitle') || '';
+    }
   }
 
   // ── NAVIGATION ────────────────────────────────────────────
@@ -1431,6 +1469,7 @@
     }
     typeFilters['pocket'] = 'all';
     renderType('pocket');
+    updateBookCountForView('pocket');
   }
 
   function setQuickSeries(series, btn) {
@@ -1599,8 +1638,9 @@
 
   function showMsg(text, type) {
     const el = document.getElementById('saveMsg');
+    if (!el) return;
     el.textContent=text; el.className='save-msg '+type;
-    setTimeout(()=>{ el.textContent=''; el.className='save-msg'; }, 3000);
+    setTimeout(()=>{ if(el) { el.textContent=''; el.className='save-msg'; } }, 3000);
   }
 
   // ── TYPE FILTERS ──────────────────────────────────────────
@@ -1707,19 +1747,21 @@
     if (missingEl) missingEl.innerHTML = '';
 
     if (filter === 'missing' && type === 'pocket') {
-      infoEl.textContent = 'MANGLER';
-      document.getElementById('pocketGrid').innerHTML = '';
+      if (infoEl) infoEl.textContent = 'MANGLER';
+      const pocketGrid = document.getElementById('pocketGrid');
+      if (pocketGrid) pocketGrid.innerHTML = '';
       renderPocketMissing();
       return;
     }
 
-    infoEl.textContent = keys.length + ' BØGER VISES';
+    if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
     if (type === 'pocket' || type === 'theme') {
       // Lomme-anden og Temabøger: gruppér efter årstal med overskrifter
       renderByYear(type, groups, keys);
     } else {
       const gridEl = document.getElementById(type+'Grid');
+      if (!gridEl) return;
       if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
       keys.sort((a, b) => {
         const ba = groups[a][0], bb = groups[b][0];
@@ -1817,6 +1859,7 @@
 
   function renderByYear(type, groups, keys) {
     const gridEl = document.getElementById(type+'Grid');
+    if (!gridEl) return;
     if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
     // Gruppér efter årstal
     const byYear = {};
