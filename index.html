@@ -1451,7 +1451,7 @@
   }
 
   // ── ANTAL & TILSTAND ──────────────────────────────────────
-  function changeCount(d) { addCount=Math.max(1,addCount+d); document.getElementById('countVal').textContent=addCount; }
+  function changeCount(d) { addCount=Math.max(1,addCount+d); }
   function changeQuickCount(d) { quickCount=Math.max(1,quickCount+d); document.getElementById('quickCountVal').textContent=quickCount; }
 
   function setPocketSeries(series, btn) {
@@ -1619,7 +1619,7 @@
       if (isTheme || isOther) document.getElementById('addTitle').value='';
       document.getElementById('addYear').value='';
       ['front','spine','back'].forEach(s=>{ addImages[s]=null; clearPreview(s,false); });
-      addCount=1; document.getElementById('countVal').textContent=1;
+      addCount=1;
       // tilstand bevares — ingen reset af addCond
       showMsg('Gemt! ✓','ok');
       await loadBooks(false);
