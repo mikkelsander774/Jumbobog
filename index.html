@@ -1112,7 +1112,7 @@
     renderCollection();
     // Migrer: pocket-bøger uden pocket_series får onkel_joakim som default i hukommelsen
     books.forEach(b => { if (b.book_type === 'pocket' && !b.pocket_series) b.pocket_series = 'onkel_joakim'; });
-    ['theme','pocket','mammut','other','dstore'].forEach(t => { try { renderType(t); } catch(e) { console.warn('renderType error for', t, e); } });
+    ['theme','pocket','mammut','other','dstore'].forEach(t => { try { renderType(t); } catch(e) { console.error('renderType fejl for', t, e.message, e.stack); } });
   }
 
   function updateCount() {
@@ -1671,10 +1671,10 @@
 
   function renderType(type) {
     const filter = typeFilters[type] || 'all';
-    // Pocket: filtrer også på aktiv serie (bøger uden serie tæller som onkel_joakim)
     const typeBooks = type === 'pocket'
       ? books.filter(b => (b.book_type || 'jumbo') === 'pocket' && (b.pocket_series || 'onkel_joakim') === activePocketSeries)
       : books.filter(b => (b.book_type || 'jumbo') === type);
+    if (type === 'dstore') console.log('dstore typeBooks:', typeBooks.length, 'alle book_types:', [...new Set(books.map(b=>b.book_type))].join(','));
 
     // Gruppering: temabøger → dublet kun hvis SAMME titel+årstal (case-insensitivt)
     // Alle andre typer → individuelt (key = id)
