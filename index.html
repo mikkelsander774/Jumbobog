@@ -437,7 +437,6 @@
           <button class="filter-btn" id="qtype-mammut" onclick="setQuickType('mammut',this)">MAMMUTBOG</button>
           <button class="filter-btn" id="qtype-other" onclick="setQuickType('other',this)">ØVRIG</button>
           <button class="filter-btn" id="qtype-dstore" onclick="setQuickType('dstore',this)">DEN STORE</button>
-          <button class="filter-btn" id="qtype-dstore" onclick="setQuickType('dstore',this)">DEN STORE</button>
         </div>
         <div class="num-row">
           <div class="field" style="flex:1;">
@@ -477,7 +476,6 @@
             <button class="filter-btn" id="type-pocket" onclick="setAddType('pocket',this)">LOMME-ANDEN</button>
             <button class="filter-btn" id="type-mammut" onclick="setAddType('mammut',this)">MAMMUTBOG</button>
             <button class="filter-btn" id="type-other" onclick="setAddType('other',this)">ØVRIG</button>
-            <button class="filter-btn" id="type-dstore" onclick="setAddType('dstore',this)">DEN STORE</button>
             <button class="filter-btn" id="type-dstore" onclick="setAddType('dstore',this)">DEN STORE</button>
           </div>
         </div>
@@ -1773,8 +1771,8 @@
 
     if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
-    if (type === 'pocket' || type === 'theme') {
-      // Lomme-anden og Temabøger: gruppér efter årstal med overskrifter
+    if (type === 'pocket' || type === 'theme' || type === 'dstore') {
+      // Lomme-anden, Temabøger og Den Store: gruppér efter årstal med overskrifter
       renderByYear(type, groups, keys);
     } else {
       const gridEl = document.getElementById(type+'Grid');
@@ -1968,7 +1966,7 @@
     const vkEscaped = (b._viewType||'collection') + '_' + b.id;
     return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''} ${isRead?'is-read':''}">
       <div class="card-header">${topHtml}<button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button></div>
-      ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket' && b.book_type !== 'dstore')?`<div class="book-year">${b.year}</div>`:''}
+      ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket')?`<div class="book-year">${b.year}</div>`:''}
       ${badgeHtml}${imgHtml}${flipHtml}
     </div>`;
   }
@@ -2163,7 +2161,6 @@
     if (t === 'mammut')  return 'Mammutbog ' + num + yr;
     if (t === 'theme')   return 'Temabog' + (num ? ' ' + num : '') + (b.title ? title : '') + yr;
     if (t === 'other')   return (b.title ? b.title : 'Øvrig') + (num ? ' nr. ' + b.number : '') + yr;
-    if (t === 'dstore')  return (b.title || 'Den Store') + yr;
     if (t === 'dstore')  return (b.title || 'Den Store') + yr;
     return num + yr;
   }
