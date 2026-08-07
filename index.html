@@ -1608,14 +1608,17 @@
   async function addBook() {
     const isTheme = addType === 'theme';
     const isOther = addType === 'other';
-    const num = isTheme ? null : document.getElementById('addNumber').value.trim();
-    const manualTitle = (isTheme || isOther) ? document.getElementById('addTitle').value.trim() : null;
-    const title = (isTheme || isOther) ? (manualTitle || '') : getTitle(Number(num));
+    const isDstore = addType === 'dstore';
+    const num = (isTheme || isDstore) ? null : document.getElementById('addNumber').value.trim();
+    const manualTitle = (isTheme || isOther || isDstore) ? document.getElementById('addTitle').value.trim() : null;
+    const title = (isTheme || isOther || isDstore) ? (manualTitle || '') : getTitle(Number(num));
     const year = document.getElementById('addYear').value.trim();
-    if (!isOther && !isTheme && !num) { showMsg('Indtast et bognummer!','err'); return; }
+    if (!isOther && !isTheme && !isDstore && !num) { showMsg('Indtast et bognummer!','err'); return; }
     if (addType === 'pocket' && !addPocketSeries) { showMsg('Vælg en serie!','err'); return; }
     if (isOther && !num && !manualTitle) { showMsg('Indtast enten et bognummer eller en titel!','err'); return; }
     if (isTheme && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
+    if (isDstore && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
+    if (isDstore && !year) { showMsg('Indtast årstal!','err'); return; }
 
     const btn = document.getElementById('addBtn');
     btn.disabled=true; btn.textContent='GEMMER...';
