@@ -1887,6 +1887,7 @@
   function renderByYear(type, groups, keys) {
     const gridEl = document.getElementById(type+'Grid');
     if (!gridEl) return;
+    console.log('renderByYear', type, 'keys:', keys.length, 'groups:', Object.keys(groups).length);
     if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
     // Gruppér efter årstal
     const byYear = {};
