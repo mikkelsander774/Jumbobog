@@ -333,6 +333,7 @@
     <button class="tab" onclick="switchView('mammut',this)">🐘 MAMMUTBØGER</button>
     <button class="tab" onclick="switchView('theme',this)">🎨 TEMABØGER</button>
     <button class="tab" onclick="switchView('other',this)">📖 ØVRIGE</button>
+    <button class="tab" onclick="switchView('dstore',this)">📕 DEN STORE</button>
     <button class="tab" onclick="switchView('tools',this)">⚙ INDSTILLINGER</button>
   </div>
 </header>
@@ -435,6 +436,8 @@
           <button class="filter-btn" id="qtype-pocket" onclick="setQuickType('pocket',this)">LOMME-ANDEN</button>
           <button class="filter-btn" id="qtype-mammut" onclick="setQuickType('mammut',this)">MAMMUTBOG</button>
           <button class="filter-btn" id="qtype-other" onclick="setQuickType('other',this)">ØVRIG</button>
+          <button class="filter-btn" id="qtype-dstore" onclick="setQuickType('dstore',this)">DEN STORE</button>
+          <button class="filter-btn" id="qtype-dstore" onclick="setQuickType('dstore',this)">DEN STORE</button>
         </div>
         <div class="num-row">
           <div class="field" style="flex:1;">
@@ -474,6 +477,8 @@
             <button class="filter-btn" id="type-pocket" onclick="setAddType('pocket',this)">LOMME-ANDEN</button>
             <button class="filter-btn" id="type-mammut" onclick="setAddType('mammut',this)">MAMMUTBOG</button>
             <button class="filter-btn" id="type-other" onclick="setAddType('other',this)">ØVRIG</button>
+            <button class="filter-btn" id="type-dstore" onclick="setAddType('dstore',this)">DEN STORE</button>
+            <button class="filter-btn" id="type-dstore" onclick="setAddType('dstore',this)">DEN STORE</button>
           </div>
         </div>
 
@@ -793,12 +798,15 @@
     const isTheme = type === 'theme';
     const isOther = type === 'other';
     const isPocket = type === 'pocket';
+    const isDstore = type === 'dstore';
     const numField = document.getElementById('addNumberField');
     const numLabel = numField.querySelector('label');
-    numField.style.display = isTheme ? 'none' : '';
+    numField.style.display = (isTheme || isDstore) ? 'none' : '';
     numLabel.textContent = isOther ? 'BOGNUMMER' : 'BOGNUMMER *';
     document.getElementById('addSeriesField').style.display = isPocket ? '' : 'none';
-    document.getElementById('addTitleField').style.display = (isTheme || isOther) ? '' : 'none';
+    const titleField = document.getElementById('addTitleField');
+    titleField.style.display = (isTheme || isOther || isDstore) ? '' : 'none';
+    titleField.querySelector('label').textContent = isDstore ? 'TITEL *' : 'TITEL';
   }
   let addImages = { front: null, spine: null, back: null }; // File objects
   let editImages = { front: null, spine: null, back: null }; // File objects or existing URLs
@@ -1106,7 +1114,7 @@
     renderCollection();
     // Migrer: pocket-bøger uden pocket_series får onkel_joakim som default i hukommelsen
     books.forEach(b => { if (b.book_type === 'pocket' && !b.pocket_series) b.pocket_series = 'onkel_joakim'; });
-    ['theme','pocket','mammut','other'].forEach(t => { try { renderType(t); } catch(e) { console.warn('renderType error for', t, e); } });
+    ['theme','pocket','mammut','other','dstore'].forEach(t => { try { renderType(t); } catch(e) { console.warn('renderType error for', t, e); } });
   }
 
   function updateCount() {
@@ -1180,6 +1188,11 @@
       let txt = `${total} BØGER`;
       el.textContent = txt;
 
+    } else if (view === 'dstore') {
+      const filtered = books.filter(b => b.book_type === 'dstore');
+      const total = filtered.length;
+      let txt = total + ' BØGER';
+      el.textContent = txt;
     } else {
       if (el) el.textContent = localStorage.getItem('appSubtitle') || '';
     }
@@ -1195,7 +1208,7 @@
     currentView = name;
     updateBookCountForView(name);
     if (name==='collection') renderCollection();
-    if (['theme','pocket','mammut','other'].includes(name)) renderType(name);
+    if (['theme','pocket','mammut','other','dstore'].includes(name)) renderType(name);
   }
 
   // ── SØGNING ───────────────────────────────────────────────
@@ -1489,10 +1502,12 @@
     document.querySelectorAll('[id^="qtype-"]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('quickSeriesField').style.display = type === 'pocket' ? '' : 'none';
-    document.getElementById('quickTitleField').style.display = (type === 'theme' || type === 'other') ? '' : 'none';
+    document.getElementById('quickTitleField').style.display = (type === 'theme' || type === 'other' || type === 'dstore') ? '' : 'none';
     const titleInput = document.getElementById('quickTitle');
-    titleInput.placeholder = type === 'other' ? 'Titel (valgfrit)' : 'Bogens titel';
-    document.getElementById('quickNumber').placeholder = type === 'other' ? 'Bognummer (valgfrit)' : 'f.eks. 42';
+    titleInput.placeholder = type === 'other' ? 'Titel (valgfrit)' : 'Bogens titel *';
+    const numField = document.getElementById('quickNumber');
+    numField.style.display = type === 'dstore' ? 'none' : '';
+    numField.placeholder = type === 'other' ? 'Bognummer (valgfrit)' : 'f.eks. 42';
   }
   function changeEditCount(d) { editCount=Math.max(1,editCount+d); document.getElementById('editCountVal').textContent=editCount; }
 
@@ -1559,12 +1574,14 @@
     const num = document.getElementById('quickNumber').value.trim();
     const isTheme = quickType === 'theme';
     const isOther = quickType === 'other';
-    const manualTitle = (isTheme || isOther) ? document.getElementById('quickTitle').value.trim() : null;
-    if (!isOther && !num) { showMsg('Indtast et bognummer!','err'); return; }
+    const isDstore = quickType === 'dstore';
+    const manualTitle = (isTheme || isOther || isDstore) ? document.getElementById('quickTitle').value.trim() : null;
+    if (!isOther && !isDstore && !num) { showMsg('Indtast et bognummer!','err'); return; }
     if (quickType === 'pocket' && !quickPocketSeries) { showMsg('Vælg en serie!','err'); return; }
     if (isOther && !num && !manualTitle) { showMsg('Indtast enten et bognummer eller en titel!','err'); return; }
     if (isTheme && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
-    const title = (isTheme || isOther) ? (manualTitle||'') : (quickType === 'jumbo' ? getTitle(Number(num)) : '');
+    if (isDstore && !manualTitle) { showMsg('Indtast en titel!','err'); return; }
+    const title = (isTheme || isOther || isDstore) ? (manualTitle||'') : (quickType === 'jumbo' ? getTitle(Number(num)) : '');
     const btn = document.getElementById('quickAddBtn');
     btn.disabled=true; btn.textContent='GEMMER...';
     const pSeries = quickType === 'pocket' ? quickPocketSeries : null;
@@ -1644,7 +1661,7 @@
   }
 
   // ── TYPE FILTERS ──────────────────────────────────────────
-  const typeFilters = { theme:'all', pocket:'all', mammut:'all', other:'all' };
+  const typeFilters = { theme:'all', pocket:'all', mammut:'all', other:'all', dstore:'all' };
 
   function setTypeFilter(type, filter, btn) {
     typeFilters[type] = filter;
@@ -1932,12 +1949,15 @@
       const serieLabel = POCKET_SERIES_LABELS[b.pocket_series || 'onkel_joakim'] || 'Lomme-anden';
       topHtml = b.number != null ? `<div class="book-number">${serieLabel} nr. ${b.number}</div>` : `<div class="book-number">${serieLabel}</div>`;
       midHtml = '';
+    } else if (b.book_type === 'dstore') {
+      // Den Store: kun titel og årstal, intet nummer
+      topHtml = `<div class="book-number">${b.title || 'Den Store'}</div>`;
+      midHtml = '';
     } else if (b.book_type === 'other') {
-      // Øvrige: titel øverst hvis findes, derefter "Øvrig nr. X" hvis nummer findes
       topHtml = b.title
         ? `<div class="book-number">${b.title}</div>`
-        : (b.number != null ? `<div class="book-number">Øvrig nr. ${b.number}</div>` : '<div class="book-number">Øvrig</div>');
-      midHtml = (b.title && b.number != null) ? `<div class="book-title">Øvrig nr. ${b.number}</div>` : '';
+        : (b.number != null && b.number > 0 ? `<div class="book-number">Øvrig nr. ${b.number}</div>` : '<div class="book-number">Øvrig</div>');
+      midHtml = (b.title && b.number != null && b.number > 0) ? `<div class="book-title">Øvrig nr. ${b.number}</div>` : '';
     } else {
       // Jumbobøger
       const displayTitle = b.title || getTitle(b.number);
@@ -1948,7 +1968,7 @@
     const vkEscaped = (b._viewType||'collection') + '_' + b.id;
     return `<div class="book-card ${hasImg?'has-images':''} ${cnt>1?'dupli':''} ${b.condition===1?'cond1':''} ${isRead?'is-read':''}">
       <div class="card-header">${topHtml}<button class="edit-btn" onclick="event.stopPropagation();openEdit(${b.id})">✏</button></div>
-      ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket')?`<div class="book-year">${b.year}</div>`:''}
+      ${midHtml}${(b.year && b.book_type !== 'theme' && b.book_type !== 'pocket' && b.book_type !== 'dstore')?`<div class="book-year">${b.year}</div>`:''}
       ${badgeHtml}${imgHtml}${flipHtml}
     </div>`;
   }
@@ -2032,7 +2052,7 @@
     const activeView = document.querySelector('.view.active');
     if (activeView) {
       const type = activeView.id.replace('view-','');
-      if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+      if (['theme','pocket','mammut','other','dstore'].includes(type)) renderType(type);
     }
   }
 
@@ -2143,6 +2163,8 @@
     if (t === 'mammut')  return 'Mammutbog ' + num + yr;
     if (t === 'theme')   return 'Temabog' + (num ? ' ' + num : '') + (b.title ? title : '') + yr;
     if (t === 'other')   return (b.title ? b.title : 'Øvrig') + (num ? ' nr. ' + b.number : '') + yr;
+    if (t === 'dstore')  return (b.title || 'Den Store') + yr;
+    if (t === 'dstore')  return (b.title || 'Den Store') + yr;
     return num + yr;
   }
 
@@ -2338,7 +2360,7 @@
 
 
 
-  const TYPE_LABELS = { jumbo:'Jumbobog', pocket:'Lomme-anden', mammut:'Mammutbog', theme:'Temabog', other:'Øvrig' };
+  const TYPE_LABELS = { jumbo:'Jumbobog', pocket:'Lomme-anden', mammut:'Mammutbog', theme:'Temabog', other:'Øvrig', dstore:'Den Store' };
 
   async function migrateOtherToMickey() {
     const msg = document.getElementById('migrateMickeyMsg');
