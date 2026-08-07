@@ -553,6 +553,19 @@
     </div>
   </div>
 
+  <!-- DEN STORE -->
+  <div class="view" id="view-dstore">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('dstore','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('dstore','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('dstore','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="dstoreInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div id="dstoreGrid"></div>
+    </div>
+  </div>
+
   <!-- MANGLER -->
 
 
@@ -1674,7 +1687,6 @@
     const typeBooks = type === 'pocket'
       ? books.filter(b => (b.book_type || 'jumbo') === 'pocket' && (b.pocket_series || 'onkel_joakim') === activePocketSeries)
       : books.filter(b => (b.book_type || 'jumbo') === type);
-    if (type === 'dstore') console.log('dstore typeBooks:', typeBooks.length, 'alle book_types:', [...new Set(books.map(b=>b.book_type))].join(','));
 
     // Gruppering: temabøger → dublet kun hvis SAMME titel+årstal (case-insensitivt)
     // Alle andre typer → individuelt (key = id)
@@ -1887,7 +1899,6 @@
   function renderByYear(type, groups, keys) {
     const gridEl = document.getElementById(type+'Grid');
     if (!gridEl) return;
-    console.log('renderByYear', type, 'keys:', keys.length, 'groups:', Object.keys(groups).length);
     if (!keys.length) { gridEl.innerHTML='<div class="empty-msg">Ingen bøger endnu.</div>'; return; }
     // Gruppér efter årstal
     const byYear = {};
