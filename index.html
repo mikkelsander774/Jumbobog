@@ -1733,6 +1733,18 @@
       for (const k of Object.keys(groups)) {
         groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
       }
+    } else if (type === 'dstore') {
+      // Den Store: grupper på titel+årstal som dubletter, ellers individuelt
+      for (const b of typeBooks) {
+        const titleKey = (b.title || '').trim().toLowerCase();
+        const yearKey = (b.year || '').trim();
+        const key = (titleKey && yearKey) ? ('ds_' + titleKey + '_' + yearKey) : ('id_' + b.id);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(b);
+      }
+      for (const k of Object.keys(groups)) {
+        groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
+      }
     } else if (type === 'pocket') {
       // Pocket: grupper på år+nummer — dubletter hvis identisk år og nummer i samme serie
       for (const b of typeBooks) {
