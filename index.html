@@ -665,6 +665,25 @@
     <div class="modal-form">
       <input type="hidden" id="editId" />
       <div class="field">
+        <label>BOGTYPE</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;" id="editTypeRow">
+          <button class="filter-btn" id="et-jumbo"  onclick="setEditType('jumbo',this)">JUMBOBOG</button>
+          <button class="filter-btn" id="et-pocket" onclick="setEditType('pocket',this)">LOMME-ANDEN</button>
+          <button class="filter-btn" id="et-mammut" onclick="setEditType('mammut',this)">MAMMUTBOG</button>
+          <button class="filter-btn" id="et-theme"  onclick="setEditType('theme',this)">TEMABOG</button>
+          <button class="filter-btn" id="et-other"  onclick="setEditType('other',this)">ØVRIG</button>
+          <button class="filter-btn" id="et-dstore" onclick="setEditType('dstore',this)">DEN STORE</button>
+        </div>
+      </div>
+      <div class="field" id="editSeriesField" style="display:none;">
+        <label>SERIE</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;" id="editSeriesRow">
+          <button class="filter-btn" id="es-onkel_joakim"  onclick="setEditSeries('onkel_joakim',this)">ONKEL JOAKIM</button>
+          <button class="filter-btn" id="es-mickey_mouse"  onclick="setEditSeries('mickey_mouse',this)">MICKEY MOUSE</button>
+          <button class="filter-btn" id="es-bjoerne_banden" onclick="setEditSeries('bjoerne_banden',this)">BJØRNE BANDEN</button>
+        </div>
+      </div>
+      <div class="field">
         <label>BOGNUMMER</label>
         <input type="number" id="editNumber" readonly style="opacity:0.5;cursor:not-allowed;" />
       </div>
@@ -798,6 +817,8 @@
   let addPocketSeries = 'onkel_joakim';   // valgt serie i detaljeret tilføj
   let addCond = null, editCond = null;
   let editIsRead = false;
+  let editBookType = 'jumbo';
+  let editPocketSeries = 'onkel_joakim';
   let addType = 'jumbo';
 
   function setAddType(type, btn) {
@@ -2205,7 +2226,19 @@
     const b = books.find(b=>b.id===id); if(!b) return;
     document.getElementById('editId').value=id;
     document.getElementById('editNumber').value=b.number;
-    const showTitle = b.book_type === 'theme' || b.book_type === 'other';
+    // Sæt bogtype
+    editBookType = b.book_type || 'jumbo';
+    editPocketSeries = b.pocket_series || 'onkel_joakim';
+    document.querySelectorAll('#editTypeRow .filter-btn').forEach(btn => btn.classList.remove('active'));
+    const etBtn = document.getElementById('et-' + editBookType);
+    if (etBtn) etBtn.classList.add('active');
+    _updateEditTypeUI();
+    // Serie (pocket)
+    document.querySelectorAll('#editSeriesRow .filter-btn').forEach(btn => btn.classList.remove('active'));
+    const esBtn = document.getElementById('es-' + editPocketSeries);
+    if (esBtn) esBtn.classList.add('active');
+    // Titel
+    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
     document.getElementById('editTitleField').style.display = showTitle ? '' : 'none';
     if (showTitle) document.getElementById('editTitle').value = b.title || '';
     document.getElementById('editYear').value=b.year||'';
@@ -2246,6 +2279,27 @@
       .map(([k,lbl]) => `<button class="btn-sm" onclick="rotateEditImage(${b.id},'${k}')">↻ ${lbl}</button>`)
       .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder at rotere</span>';
     document.getElementById('editModal').classList.add('open');
+  }
+
+  function setEditType(type, btn) {
+    editBookType = type;
+    document.querySelectorAll('#editTypeRow .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _updateEditTypeUI();
+  }
+
+  function setEditSeries(series, btn) {
+    editPocketSeries = series;
+    document.querySelectorAll('#editSeriesRow .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function _updateEditTypeUI() {
+    // Serie-felt: kun synligt for pocket
+    document.getElementById('editSeriesField').style.display = editBookType === 'pocket' ? '' : 'none';
+    // Titel-felt: synligt for theme, other, dstore
+    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
+    document.getElementById('editTitleField').style.display = showTitle ? '' : 'none';
   }
 
   function switchEditDupli(id) {
@@ -2292,11 +2346,15 @@
         setProgress('edit', done/3*100, done===3?'GEMMER...':'UPLOADER...');
       }
 
-      const showTitle = b.book_type === 'theme' || b.book_type === 'other';
+      const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
       const editedTitle = showTitle
         ? document.getElementById('editTitle').value.trim()
-        : (b.book_type === 'jumbo' || !b.book_type ? getTitle(b.number) : b.title || '');
+        : (editBookType === 'jumbo' ? getTitle(b.number) : b.title || '');
+      const newType = editBookType;
+      const newSeries = newType === 'pocket' ? editPocketSeries : null;
       await sb.from('books').update({
+        book_type: newType,
+        pocket_series: newSeries,
         title: editedTitle,
         year: document.getElementById('editYear').value.trim(),
         condition: editCond,
