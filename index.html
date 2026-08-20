@@ -937,7 +937,7 @@
 536:"Nautilus vender tilbage!",537:"Skildpaddeøerne",538:"Fodboldfeber!",539:"Strandfesten",540:"Sjov på stranden",
 541:"Den store e-sport-finale!",542:"Kampen om Mars!",543:"Den magiske bog",544:"Onkel Joakim og uendelighedsmønten",
 545:"Pist væk!",546:"Dinoer i Andeby",547:"Sandokand søfareren",548:"Fantastiske fantasilliarder",549:"Mission dobbeltspil!",550:"Hvad nu hvis",
-551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E",557:"Spøgelset i operaen",558:"Den store snekrise!",559:"De magiske sten",560:"",561:"På sporet af Marco Polo",562:"Vild med fodbold",563:"",564:"All Inclusive"
+551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E",557:"Spøgelset i operaen",558:"Den store snekrise!",559:"De magiske sten",560:"Flugten fra pengetanken",561:"På sporet af Marco Polo",562:"Vild med fodbold",563:"Vild i varmen!",564:"All Inclusive"
   };
   function getTitle(num) { return JUMBO_TITLES[String(num)] || JUMBO_TITLES[num] || ''; }
 
@@ -1958,7 +1958,7 @@
     const _labelBar = labels.length > 1 ? `<div class="flip-hint">${labels.map((l,i)=>i===vi?`<b style="color:var(--gold)">${l}</b>`:l).join(' · ')}</div>` : '<div class="flip-hint"></div>';
     const flipHtml = _labelBar;
     const badges = [];
-    if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleTypeCard('${b.id}',${cnt},event)">×${cnt} ›</span>`);
+    if (cnt > 1) badges.push(`<span class="badge dupli" style="cursor:pointer;" onclick="cycleTypeCard('${group[0].id}',${cnt},event)">×${cnt} ›</span>`);
     if (b.condition) badges.push(condBadgeHtml(b.condition));
     if (!hasImg) badges.push(`<span class="badge incomplete">MANGLER BILLEDER</span>`);
     const imgKeys = ['front_image','spine_image','back_image'];
