@@ -937,7 +937,7 @@
 536:"Nautilus vender tilbage!",537:"Skildpaddeøerne",538:"Fodboldfeber!",539:"Strandfesten",540:"Sjov på stranden",
 541:"Den store e-sport-finale!",542:"Kampen om Mars!",543:"Den magiske bog",544:"Onkel Joakim og uendelighedsmønten",
 545:"Pist væk!",546:"Dinoer i Andeby",547:"Sandokand søfareren",548:"Fantastiske fantasilliarder",549:"Mission dobbeltspil!",550:"Hvad nu hvis",
-551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E"
+551:"En andtastisk sommer!",552:"Sommertid",553:"På jagt med kæmpebierne!",554:"Legendariske helte",555:"Spøgelset fra Klondike",556:"313-E",557:"Spøgelset i operaen",558:"Den store snekrise!",559:"De magiske sten",560:"",561:"På sporet af Marco Polo",562:"Vild med fodbold",563:"",564:"All Inclusive"
   };
   function getTitle(num) { return JUMBO_TITLES[String(num)] || JUMBO_TITLES[num] || ''; }
 
@@ -1807,7 +1807,12 @@
         const ba = groups[a][0], bb = groups[b][0];
         return (ba.number||0) - (bb.number||0);
       });
-      gridEl.innerHTML = keys.map(k => { const b = {...groups[k][0], _viewType: type}; return renderCard(b, groups[k], groups[k].length); }).join('');
+      gridEl.innerHTML = keys.map(k => {
+        const grp = groups[k];
+        const dupliIdx = Math.min(cardDupliIdx[grp[0].id] || 0, grp.length - 1);
+        const b = {...grp[dupliIdx], _viewType: type};
+        return renderCard(b, grp, grp.length);
+      }).join('');
     }
   }
 
@@ -1924,7 +1929,14 @@
     gridEl.innerHTML = years.map(yr =>
       '<div style="margin-top:16px;">' +
       '<div style="color:var(--gold);font-size:11px;font-weight:700;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:4px;margin-bottom:8px;">' + yr + '</div>' +
-      '<div class="collection-grid">' + byYear[yr].map(k => { const b = {...groups[k][0], _viewType: type}; return renderCard(b, groups[k], groups[k].length); }).join('') + '</div>' +
+      '<div class="collection-grid">' + byYear[yr].map(k => {
+        const grp = groups[k];
+        // Brug cardDupliIdx til at vælge hvilket eksemplar der vises
+        const dupliKey = grp[0].id;
+        const dupliIdx = Math.min(cardDupliIdx[dupliKey] || 0, grp.length - 1);
+        const b = {...grp[dupliIdx], _viewType: type};
+        return renderCard(b, grp, grp.length);
+      }).join('') + '</div>' +
       '</div>'
     ).join('');
   }
@@ -2036,23 +2048,6 @@
       .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder</span>';
   }
 
-  async function rotateEditImage(bookId, imgKey) {
-    const b = books.find(b => b.id === bookId);
-    if (!b || !b[imgKey]) return;
-    const btns = document.getElementById('editRotateBtns');
-    btns.innerHTML = '<span style="font-size:11px;color:var(--gold);">ROTERER...</span>';
-    await rotateImage(bookId, imgKey, null);
-    const updatedB = books.find(b => b.id === bookId);
-    if (updatedB) {
-      const side = imgKey.replace('_image','');
-      showUrlPreview(side, updatedB[imgKey], true);
-      editExistingUrls[side] = updatedB[imgKey];
-    }
-    if (btns) btns.innerHTML = [['front_image','FORSIDE'],['spine_image','RYG'],['back_image','BAGSIDE']]
-      .filter(([k]) => updatedB && updatedB[k])
-      .map(([k,lbl]) => `<button class="btn-sm" onclick="rotateEditImage(${bookId},'${k}')">↻ ${lbl}</button>`)
-      .join('') || '<span style="font-size:11px;color:var(--muted);">Ingen billeder</span>';
-  }
 
   async function toggleRead(id) {
     const b = books.find(b => b.id === id);
@@ -2064,14 +2059,15 @@
     if (activeView) {
       const type = activeView.id.replace('view-','');
       if (type === 'collection') renderCollection();
-      else if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+      else if (['theme','pocket','mammut','other','dstore'].includes(type)) renderType(type);
     }
     await sb.from('books').update({ is_read: newVal }).eq('id', id);
   }
 
   function cycleTypeCard(bookId, total, event) {
     event.stopPropagation();
-    // For type-faner: genrenderer aktiv fane
+    // Cycle duplikat for type-faner (samme logik som cycleDupli men med bookId som key)
+    cardDupliIdx[bookId] = ((cardDupliIdx[bookId] || 0) + 1) % total;
     const activeView = document.querySelector('.view.active');
     if (activeView) {
       const type = activeView.id.replace('view-','');
@@ -2173,7 +2169,7 @@
     const activeView = document.querySelector('.view.active');
     const type = activeView ? activeView.id.replace('view-','') : 'collection';
     if (type === 'collection') renderCollection();
-    else if (['theme','pocket','mammut','other'].includes(type)) renderType(type);
+    else if (['theme','pocket','mammut','other','dstore'].includes(type)) renderType(type);
   }
 
   function deleteBookLabel(b) {
