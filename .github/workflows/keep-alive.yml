@@ -1,18 +1,24 @@
-name: Keep Active
-
+name: Keep Supabase Active
 on:
   schedule:
     - cron: '0 8 * * *'
   workflow_dispatch:
-
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
+      - name: Ping Jumbobog Supabase
         run: |
           curl -s \
             "https://bfkmmyqjkgzymypgcikt.supabase.co/rest/v1/books?select=id&limit=1" \
-            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWizbJnhdQJFt3ZIz7Vk" \
-            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWizbJnhdQJFt3ZIz7Vk" \
-            -o /dev/null -w "Status: %{http_code}\n"
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk" \
+            -o /dev/null -w "Jumbobog status: %{http_code}\n"
+
+      - name: Ping Waoo Performance Supabase
+        run: |
+          curl -s \
+            "https://fyaaelaiarzxisegruxs.supabase.co/rest/v1/user_data?select=key&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWFlbGFpYXJ6eGlzZWdydXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTQ2MDcsImV4cCI6MjEwMjc5MDYwN30.udlTGskh6QBUa-nX5gnqMr4ZZJrHZXBeWkHwfgnWsiA" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWFlbGFpYXJ6eGlzZWdydXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTQ2MDcsImV4cCI6MjEwMjc5MDYwN30.udlTGskh6QBUa-nX5gnqMr4ZZJrHZXBeWkHwfgnWsiA" \
+            -o /dev/null -w "Waoo Performance status: %{http_code}\n"
