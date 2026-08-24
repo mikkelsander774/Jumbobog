@@ -1876,7 +1876,10 @@
     if (!html) {
       el.innerHTML = '<div class="empty-msg" style="color:var(--green)">✓ Du har alle bøger i denne serie!</div>';
     } else {
-      el.innerHTML = '<div style="color:var(--muted);font-size:11px;margin-bottom:8px;">' + totalMissing + ' MANGLENDE BØGER</div>' + html;
+      el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+        '<span style="color:var(--muted);font-size:11px;">' + totalMissing + ' MANGLENDE BØGER</span>' +
+        '<button onclick="copyMissingList(\'pocket\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+        '</div>' + html;
     }
   }
 
@@ -1919,7 +1922,10 @@
     if (!html) {
       el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle bøger i denne serie!</div>';
     } else {
-      el.innerHTML = '<div style="color:var(--muted);font-size:11px;margin-bottom:8px;">' + totalMissing + ' MANGLENDE BØGER</div>' + html;
+      el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+        '<span style="color:var(--muted);font-size:11px;">' + totalMissing + ' MANGLENDE BØGER</span>' +
+        '<button onclick="copyMissingList(\'pocket\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+        '</div>' + html;
     }
   }
 
@@ -2395,13 +2401,73 @@
     }
     info.innerHTML = `Viser #1–#${max} (${books.length} registrerede)<br>
       Mangler helt: <b style="color:var(--red)">${missingCount}</b> &nbsp;·&nbsp;
-      Ønskes udskiftet: <b style="color:var(--orange)">${replaceCount}</b>`;
+      Ønskes udskiftet: <b style="color:var(--orange)">${replaceCount}</b>
+      <button onclick="copyMissingList('jumbo')" style="margin-left:12px;background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:'Courier New',monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;" id="copyJumboBtn">📋 KOPIÉR LISTE</button>`;
     if (!items.length) {
       grid.innerHTML='<div style="grid-column:span 4;color:var(--green);text-align:center;padding:24px;font-weight:700;font-size:14px;">SAMLINGEN ER KOMPLET! 🎉</div>';
     } else {
       grid.innerHTML=items.map(item=>`<div class="missing-num ${item.type}">#${String(item.n).padStart(3,'0')}</div>`).join('');
     }
   }
+
+  function copyMissingList(type) {
+    const btn = event.target;
+    let lines = [];
+
+    if (type === 'jumbo') {
+      const jumboOnly = books.filter(b => !b.book_type || b.book_type === 'jumbo');
+      const have = new Set(jumboOnly.map(b => b.number));
+      const replaceSet = new Set(
+        Object.keys(bookGroups).map(Number)
+          .filter(n => bookGroups[n].some(b => b.condition===1) && !bookGroups[n].some(b => b.condition>1))
+      );
+      const max = settings.maxBook || (jumboOnly.length ? Math.max(...jumboOnly.map(b=>b.number)) : 556);
+      for (let i = 1; i <= max; i++) {
+        if (!have.has(i)) lines.push('Jumbobog #' + String(i).padStart(3,'0') + ' — MANGLER');
+        else if (replaceSet.has(i)) lines.push('Jumbobog #' + String(i).padStart(3,'0') + ' — ØNSKES UDSKIFTET');
+      }
+
+    } else if (type === 'pocket') {
+      const SERIES_LABELS = {onkel_joakim:'Onkel Joakim', mickey_mouse:'Mickey Mouse', bjoerne_banden:'Bjørne Banden'};
+      const serieLabel = SERIES_LABELS[activePocketSeries] || activePocketSeries;
+      const catalog = POCKET_CATALOG[activePocketSeries];
+      if (!catalog) return;
+      const owned = new Set(
+        books.filter(b => b.book_type==='pocket' && (b.pocket_series||'onkel_joakim')===activePocketSeries)
+          .map(b => (b.year||'') + '_' + (b.number||''))
+      );
+      const years = Object.keys(catalog).map(Number).sort((a,b)=>a-b);
+      for (const yr of years) {
+        const missing = catalog[yr].filter(n => !owned.has(yr+'_'+n));
+        for (const n of missing) {
+          lines.push(serieLabel + ' #' + n + ' (' + yr + ')');
+        }
+      }
+    }
+
+    if (!lines.length) {
+      btn.textContent = '✓ INGEN MANGLER';
+      setTimeout(() => btn.textContent = '📋 KOPIÉR LISTE', 2000);
+      return;
+    }
+
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ KOPIERET (' + lines.length + ')';
+      setTimeout(() => btn.textContent = '📋 KOPIÉR LISTE', 2500);
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✓ KOPIERET (' + lines.length + ')';
+      setTimeout(() => btn.textContent = '📋 KOPIÉR LISTE', 2500);
+    });
+  }
+
 
   // ── SLET ALT ──────────────────────────────────────────────
   async function syncTitles() {
