@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <link rel="manifest" href="/Jumbobog/manifest.json">
+  <meta name="theme-color" content="#c8960c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="AA Samling">
+  <link rel="apple-touch-icon" href="/Jumbobog/icons/icon-192.png">
   <title>Anders And samling</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -2699,5 +2705,11 @@
   <div id="lightbox-hint">SCROLL/KNIB FOR ZOOM &nbsp;·&nbsp; TRÆK FOR AT FLYTTE &nbsp;·&nbsp; KLK UDENFOR FOR AT LUKKE</div>
   <img id="lightbox-img" src="" draggable="false" />
 </div>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/Jumbobog/sw.js')
+      .catch(e => console.log('SW fejl:', e));
+  }
+</script>
 </body>
 </html>
