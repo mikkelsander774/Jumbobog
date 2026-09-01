@@ -1,24 +1,32 @@
 name: Keep Supabase Active
+
 on:
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 6,18 * * *'  # To gange dagligt: kl. 06:00 og 18:00 UTC
   workflow_dispatch:
+
 jobs:
-  ping:
+  keep-alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Jumbobog Supabase
+      - name: Ping Supabase database
         run: |
-          curl -s \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             "https://bfkmmyqjkgzymypgcikt.supabase.co/rest/v1/books?select=id&limit=1" \
             -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk" \
-            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk" \
-            -o /dev/null -w "Jumbobog status: %{http_code}\n"
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMjE5NTksImV4cCI6MjA4ODY5Nzk1OX0.D9_V7ZRvxIfw4WBl79RFKuBaWi7bJnhdQJFt3ZIz7Vk")
+          echo "Database ping status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "ADVARSEL: Supabase svarede ikke med 200 — status var $STATUS"
+            exit 1
+          fi
+          echo "OK — Supabase er aktiv"
 
-      - name: Ping Waoo Performance Supabase
+      - name: Forsøg at genaktivere hvis pauset
+        if: failure()
         run: |
-          curl -s \
-            "https://fyaaelaiarzxisegruxs.supabase.co/rest/v1/user_data?select=key&limit=1" \
-            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWFlbGFpYXJ6eGlzZWdydXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTQ2MDcsImV4cCI6MjEwMjc5MDYwN30.udlTGskh6QBUa-nX5gnqMr4ZZJrHZXBeWkHwfgnWsiA" \
-            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWFlbGFpYXJ6eGlzZWdydXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMTQ2MDcsImV4cCI6MjEwMjc5MDYwN30.udlTGskh6QBUa-nX5gnqMr4ZZJrHZXBeWkHwfgnWsiA" \
-            -o /dev/null -w "Waoo Performance status: %{http_code}\n"
+          curl -s -X POST \
+            "https://api.supabase.com/v1/projects/bfkmmyqjkgzymypgcikt/restore" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJma21teXFqa2d6eW15cGdjaWt0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzEyMTk1OSwiZXhwIjoyMDg4Njk3OTU5fQ.GQpi9S2WJQFkSUhp8dktqMqbhox8sqvYnSI1dhzuQ38" \
+            -H "Content-Type: application/json"
+          echo "Genaktivering forsøgt"
