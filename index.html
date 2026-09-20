@@ -410,11 +410,13 @@
     <div style="margin-top:16px;">
       <div class="filter-row">
         <button class="filter-btn active" onclick="setTypeFilter('mammut','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('mammut','missing',this)">MANGLER</button>
         <button class="filter-btn" onclick="setTypeFilter('mammut','replace',this)">UDSKIFT</button>
         <button class="filter-btn" onclick="setTypeFilter('mammut','incomplete',this)">MANGLER BILLEDER</button>
       </div>
       <div class="collection-info"><span id="mammutInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
       <div class="collection-grid" id="mammutGrid"></div>
+      <div id="mammutMissingGrid"></div>
     </div>
   </div>
 
@@ -810,6 +812,17 @@
     }
   };
 
+  // ── MAMMUTBOG TITLER (1995–2009, nr. 1–15) ─────────────────
+  const MAMMUT_TITLES = {
+    1:"Mammutbog 1", 2:"Mammutbog 2", 3:"Mammutbog 3", 4:"Mammutbog 4", 5:"Mammutbog 5",
+    6:"Mammutbog 6", 7:"Mammutbog 7", 8:"Mammutbog 8", 9:"Mammutbog 9", 10:"Mammutbog 10",
+    11:"Mammutbog 11", 12:"Mammutbog 12", 13:"Mammutbog 13", 14:"Mammutbog 14", 15:"Mammutbog 15"
+  };
+  const MAMMUT_YEARS = {
+    1:1995, 2:1996, 3:1997, 4:1998, 5:1999, 6:2000, 7:2001, 8:2002, 9:2003,
+    10:2004, 11:2005, 12:2006, 13:2007, 14:2008, 15:2009
+  };
+
   let activePocketSeries = 'onkel_joakim'; // aktiv serie-filter i Lomme-Anden fanen
   let quickPocketSeries = 'onkel_joakim'; // valgt serie i hurtig-tilføj
   let addPocketSeries = 'onkel_joakim';   // valgt serie i detaljeret tilføj
@@ -1189,10 +1202,13 @@
     } else if (view === 'mammut') {
       const filtered = books.filter(b => b.book_type === 'mammut');
       const total = filtered.length;
-      const grps = new Set(filtered.map(b => b.number));
-      const dupli = total - grps.size;
+      const owned = new Set(filtered.map(b => b.number));
+      const dupli = total - owned.size;
+      const catalogTotal = Object.keys(MAMMUT_TITLES).length;
+      const missing = Array.from({length: catalogTotal}, (_,i) => i+1).filter(n => !owned.has(n)).length;
       let txt = `${total} BØGER`;
       if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      txt += ` · ${missing} MANGLER`;
       el.textContent = txt;
 
     } else if (view === 'theme') {
@@ -1814,6 +1830,14 @@
       return;
     }
 
+    if (filter === 'missing' && type === 'mammut') {
+      if (infoEl) infoEl.textContent = 'MANGLER';
+      const mammutGrid = document.getElementById('mammutGrid');
+      if (mammutGrid) mammutGrid.innerHTML = '';
+      renderMammutMissing();
+      return;
+    }
+
     if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
     if (type === 'pocket' || type === 'theme' || type === 'dstore') {
@@ -1926,6 +1950,33 @@
         '<button onclick="copyMissingList(\'pocket\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
         '</div>' + html;
     }
+  }
+
+  function renderMammutMissing() {
+    const el = document.getElementById('mammutMissingGrid');
+    const owned = new Set(
+      books.filter(b => b.book_type === 'mammut').map(b => b.number)
+    );
+    const total = Object.keys(MAMMUT_TITLES).length; // 15
+    const missing = [];
+    for (let n = 1; n <= total; n++) {
+      if (!owned.has(n)) missing.push(n);
+    }
+    if (!missing.length) {
+      el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle Mammutbøger!</div>';
+      return;
+    }
+    let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+      '<span style="color:var(--muted);font-size:11px;">' + missing.length + ' MANGLENDE BØGER</span>' +
+      '<button onclick="copyMissingList(\'mammut\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+      '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for (const n of missing) {
+      html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">' +
+        'Mammutbog #' + n + ' (' + (MAMMUT_YEARS[n]||'') + ')</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
   }
 
   function renderByYear(type, groups, keys) {
@@ -2445,6 +2496,13 @@
         for (const n of missing) {
           lines.push(serieLabel + ' #' + n + ' (' + yr + ')');
         }
+      }
+
+    } else if (type === 'mammut') {
+      const owned = new Set(books.filter(b => b.book_type === 'mammut').map(b => b.number));
+      const total = Object.keys(MAMMUT_TITLES).length;
+      for (let n = 1; n <= total; n++) {
+        if (!owned.has(n)) lines.push('Mammutbog #' + n + ' (' + (MAMMUT_YEARS[n]||'') + ') — MANGLER');
       }
     }
 
