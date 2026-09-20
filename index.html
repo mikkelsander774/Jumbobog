@@ -643,6 +643,12 @@
       <button class="btn-sm" onclick="syncTitles()">🔤 OPDATER TITLER PÅ ALLE BØGER</button>
       <div class="save-msg" id="syncMsg" style="margin-top:8px;"></div>
 
+      <div class="section-title" style="margin-top:16px;">KATALOG-STATUS</div>
+      <div id="catalogStatusBox" style="background:var(--surface);border:1px solid #333;border-radius:4px;padding:10px 14px;font-size:11px;color:var(--muted);font-family:monospace;line-height:1.8;">
+        <div>📚 <b style="color:var(--gold);">TEMABØGER</b> · <span id="themeCatalogCount"></span> titler i katalog · opdateret <span id="themeCatalogDate"></span></div>
+        <div style="margin-top:4px;color:var(--dim);">Sig "opdater temabog katalog" til Claude for at hente nye titler.</div>
+      </div>
+
       <div class="section-title" style="margin-top:16px;">BACKUP & DATA</div>
       <button class="btn-sm" onclick="exportData()">⬇ EKSPORTER SAMLING (.json)</button>
       <label class="btn-sm" style="cursor:pointer;">
@@ -862,8 +868,12 @@
     {year:2009, title:"Den store sorte Hexia de Trick"}
   ];
 
-  // ── TEMABØGER KATALOG (~51 titler, 1999–2019) ──────────────
+  // ── TEMABØGER KATALOG (store Jumbo Temabøger, ~512 sider) ───
+  // THEME_CATALOG_UPDATED: 2026-09-20
+  // THEME_CATALOG_COUNT: 88
+  // Kun store Jumbo Temabøger. Opdater ved at sige "opdater temabog katalog" til Claude.
   const THEME_CATALOG = [
+    // 1999–2013 (tidlige temabøger)
     {year:1999, title:"Anders And 65 År"},
     {year:2000, title:"Tut-Ank-And"},
     {year:2000, title:"Anders And - På Banen Igen"},
@@ -913,8 +923,58 @@
     {year:2013, title:"Monster"},
     {year:2013, title:"Eventyr"},
     {year:2013, title:"Skatten"},
+    // 2014–2016
+    {year:2014, title:"RIO"},
+    {year:2015, title:"I Østens Rige"},
+    {year:2015, title:"Scenen"},
+    {year:2016, title:"Handyand"},
+    // 2017
+    {year:2017, title:"Walt Disney's Tema Jumbobog: GULD"},
+    {year:2017, title:"Cirkusænderne"},
+    {year:2017, title:"Til skatteøen!"},
+    {year:2017, title:"På safari"},
     {year:2017, title:"Superhelte"},
-    {year:2019, title:"Landmandsliv"}
+    // 2018
+    {year:2018, title:"Dinosaurer"},
+    {year:2018, title:"Geniale og knap så geniale opfindelser"},
+    {year:2018, title:"På vingerne"},
+    {year:2018, title:"Sheriffen"},
+    {year:2018, title:"De bedste nyheder"},
+    // 2019
+    {year:2019, title:"Andtikkens historie"},
+    {year:2019, title:"Guldeventyr"},
+    {year:2019, title:"Landmandsliv"},
+    {year:2019, title:"Superskurke"},
+    {year:2019, title:"Robotter"},
+    // 2020
+    {year:2020, title:"Noget på spil"},
+    {year:2020, title:"Sand under fødderne"},
+    {year:2020, title:"Held & Horoskober"},
+    {year:2020, title:"Brandænder"},
+    {year:2020, title:"Hokus pokus"},
+    // 2021
+    {year:2021, title:"Skærmtid"},
+    {year:2021, title:"Faraoernes forbandelse"},
+    {year:2021, title:"Familie, fester og fødselsdage"},
+    {year:2021, title:"For fuld musik"},
+    // 2022
+    {year:2022, title:"Riddere og andre helte"},
+    {year:2022, title:"Nat i Andeby"},
+    {year:2022, title:"Konger, komtesser og andre vigtige ænder"},
+    {year:2022, title:"Stop! Det er politiet!"},
+    {year:2022, title:"Rumrejser tur/retur"},
+    {year:2022, title:"Kunst og kreative ænder"},
+    // 2023
+    {year:2023, title:"Vind i sejlene"},
+    {year:2023, title:"Grønne fingre!"},
+    {year:2023, title:"Dr. Anders"},
+    // 2024
+    {year:2024, title:"Sportens mestre"},
+    {year:2024, title:"Aliens og ufoer"},
+    // 2025
+    {year:2025, title:"Fashion"},
+    {year:2025, title:"Ænder i Antikken"},
+    {year:2025, title:"Handyanden Anders"}
   ];
 
   let activePocketSeries = 'onkel_joakim'; // aktiv serie-filter i Lomme-Anden fanen
@@ -1349,6 +1409,14 @@
     updateBookCountForView(name);
     if (name==='collection') renderCollection();
     if (['theme','pocket','mammut','other','dstore'].includes(name)) renderType(name);
+    if (name==='tools') updateCatalogStatus();
+  }
+
+  function updateCatalogStatus() {
+    const countEl = document.getElementById('themeCatalogCount');
+    const dateEl = document.getElementById('themeCatalogDate');
+    if (countEl) countEl.textContent = THEME_CATALOG.length;
+    if (dateEl) dateEl.textContent = 'sep 2026';
   }
 
   // ── SØGNING ───────────────────────────────────────────────
