@@ -827,6 +827,15 @@
     10:2004, 11:2005, 12:2006, 13:2007, 14:2008, 15:2009
   };
 
+  // Normaliser Den Store-titler: fjern kendte præfikser så "Hurra for Mickey"
+  // matcher "Den store hurra for Mickey" og "365 dage med Anders And" matcher sig selv.
+  function normalizeDstoreTitle(t) {
+    return (t||'').trim().toLowerCase()
+      .replace(/^den store sorte\s+/,'')
+      .replace(/^den store\s+/,'')
+      .replace(/^365 dage med\s+/,'');
+  }
+
   // ── DEN STORE KATALOG (22 bind, 1974–2009) ─────────────────
   const DSTORE_CATALOG = [
     {year:1974, title:"Den store Anders And"},
@@ -1317,9 +1326,9 @@
     } else if (view === 'dstore') {
       const filtered = books.filter(b => b.book_type === 'dstore');
       const total = filtered.length;
-      const ownedTitles = new Set(filtered.map(b => (b.title||'').trim().toLowerCase()));
+      const ownedTitles = new Set(filtered.map(b => normalizeDstoreTitle(b.title)));
       const dupli = total - ownedTitles.size;
-      const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase())).length;
+      const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(normalizeDstoreTitle(item.title))).length;
       let txt = total + ' BØGER';
       if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
       txt += ` · ${missing} MANGLER`;
@@ -2039,9 +2048,9 @@
   function renderDstoreMissing() {
     const el = document.getElementById('dstoreMissingGrid');
     const ownedTitles = new Set(
-      books.filter(b => b.book_type === 'dstore').map(b => (b.title||'').trim().toLowerCase())
+      books.filter(b => b.book_type === 'dstore').map(b => normalizeDstoreTitle(b.title))
     );
-    const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase()));
+    const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(normalizeDstoreTitle(item.title)));
     if (!missing.length) {
       el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle Den Store bøger!</div>';
       return;
@@ -2609,10 +2618,10 @@
       }
     } else if (type === 'dstore') {
       const ownedTitles = new Set(
-        books.filter(b => b.book_type === 'dstore').map(b => (b.title||'').trim().toLowerCase())
+        books.filter(b => b.book_type === 'dstore').map(b => normalizeDstoreTitle(b.title))
       );
       for (const item of DSTORE_CATALOG) {
-        if (!ownedTitles.has(item.title.toLowerCase())) {
+        if (!ownedTitles.has(normalizeDstoreTitle(item.title))) {
           lines.push(item.title + ' (' + item.year + ') — MANGLER');
         }
       }
