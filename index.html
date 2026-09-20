@@ -376,11 +376,13 @@
       <div id="themeSearchResult" style="margin-bottom:12px;"></div>
       <div class="filter-row">
         <button class="filter-btn active" onclick="setTypeFilter('theme','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('theme','missing',this)">MANGLER</button>
         <button class="filter-btn" onclick="setTypeFilter('theme','replace',this)">UDSKIFT</button>
         <button class="filter-btn" onclick="setTypeFilter('theme','incomplete',this)">MANGLER BILLEDER</button>
       </div>
       <div class="collection-info"><span id="themeInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
       <div id="themeGrid"></div>
+      <div id="themeMissingGrid"></div>
     </div>
   </div>
 
@@ -566,11 +568,13 @@
     <div style="margin-top:16px;">
       <div class="filter-row">
         <button class="filter-btn active" onclick="setTypeFilter('dstore','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('dstore','missing',this)">MANGLER</button>
         <button class="filter-btn" onclick="setTypeFilter('dstore','replace',this)">UDSKIFT</button>
         <button class="filter-btn" onclick="setTypeFilter('dstore','incomplete',this)">MANGLER BILLEDER</button>
       </div>
       <div class="collection-info"><span id="dstoreInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
       <div id="dstoreGrid"></div>
+      <div id="dstoreMissingGrid"></div>
     </div>
   </div>
 
@@ -822,6 +826,87 @@
     1:1995, 2:1996, 3:1997, 4:1998, 5:1999, 6:2000, 7:2001, 8:2002, 9:2003,
     10:2004, 11:2005, 12:2006, 13:2007, 14:2008, 15:2009
   };
+
+  // ── DEN STORE KATALOG (22 bind, 1974–2009) ─────────────────
+  const DSTORE_CATALOG = [
+    {year:1974, title:"Den store Anders And"},
+    {year:1975, title:"Den store onkel Joakim"},
+    {year:1976, title:"Den store Mickey Mouse"},
+    {year:1977, title:"Den store Fedtmule"},
+    {year:1978, title:"365 dage med Anders And"},
+    {year:1979, title:"365 dage med Mickey Mouse"},
+    {year:1980, title:"Den store Rip, Rap, Rup"},
+    {year:1981, title:"Den store Minnie & Mickey"},
+    {year:1982, title:"Den store Ståland"},
+    {year:1983, title:"Den store bog om os to"},
+    {year:1984, title:"Den store Anders And jubilæumsbog"},
+    {year:1985, title:"Den store Mickey & Fedtmule"},
+    {year:1986, title:"Den store go'e gamle Mickey Mouse"},
+    {year:1987, title:"Den store jul i Andeby"},
+    {year:1988, title:"Den store hurra for Mickey"},
+    {year:1989, title:"Den store Hexia de Trick"},
+    {year:1990, title:"Den store skattejagt"},
+    {year:1991, title:"Den store Mickey Mouse på eventyr"},
+    {year:1992, title:"Den store der var engang"},
+    {year:1993, title:"Den store Joakim von And"},
+    {year:2008, title:"Den store sorte Anders And"},
+    {year:2009, title:"Den store sorte Hexia de Trick"}
+  ];
+
+  // ── TEMABØGER KATALOG (~51 titler, 1999–2019) ──────────────
+  const THEME_CATALOG = [
+    {year:1999, title:"Anders And 65 År"},
+    {year:2000, title:"Tut-Ank-And"},
+    {year:2000, title:"Anders And - På Banen Igen"},
+    {year:2002, title:"Skattejagt"},
+    {year:2002, title:"Mørkets herre"},
+    {year:2003, title:"En rigtig stjerne"},
+    {year:2003, title:"Andebys slemme slyngler"},
+    {year:2004, title:"Anders And i rampelyset"},
+    {year:2004, title:"Ninja And Banzai"},
+    {year:2005, title:"Score♥anden"},
+    {year:2005, title:"Sværd & sandaler"},
+    {year:2005, title:"Hemmelig agent \"And, Anders And\""},
+    {year:2006, title:"Tidsrejser"},
+    {year:2006, title:"Fodboldfeber!"},
+    {year:2006, title:"Pirater"},
+    {year:2006, title:"Skattekisten"},
+    {year:2006, title:"Gru og gys"},
+    {year:2007, title:"1001 job"},
+    {year:2007, title:"Det vilde vesten"},
+    {year:2007, title:"Magiens mestre"},
+    {year:2007, title:"Onkel Joakim - Sådan bliver du rig!"},
+    {year:2007, title:"Tilbage til istiden"},
+    {year:2008, title:"40 år i Andeby"},
+    {year:2008, title:"En sang fra de varme lande"},
+    {year:2008, title:"Knæk og bræk"},
+    {year:2009, title:"En tur i rummet"},
+    {year:2009, title:"På godt og ondt"},
+    {year:2009, title:"Ægyptens mysterier"},
+    {year:2009, title:"Discofeber"},
+    {year:2010, title:"På dybt vand"},
+    {year:2010, title:"Magi"},
+    {year:2011, title:"Fjerne galakser"},
+    {year:2011, title:"Dragekrigeren"},
+    {year:2011, title:"Sorte Slyngel"},
+    {year:2011, title:"Gladiator"},
+    {year:2011, title:"S.O.S."},
+    {year:2012, title:"Viking"},
+    {year:2012, title:"Ridder"},
+    {year:2012, title:"Don Zorro"},
+    {year:2012, title:"Adventure"},
+    {year:2012, title:"Agent"},
+    {year:2012, title:"Bondeknold"},
+    {year:2012, title:"Det Klamme Køkken"},
+    {year:2013, title:"Royal"},
+    {year:2013, title:"På toppen"},
+    {year:2013, title:"Andebys helte"},
+    {year:2013, title:"Monster"},
+    {year:2013, title:"Eventyr"},
+    {year:2013, title:"Skatten"},
+    {year:2017, title:"Superhelte"},
+    {year:2019, title:"Landmandsliv"}
+  ];
 
   let activePocketSeries = 'onkel_joakim'; // aktiv serie-filter i Lomme-Anden fanen
   let quickPocketSeries = 'onkel_joakim'; // valgt serie i hurtig-tilføj
@@ -1214,15 +1299,12 @@
     } else if (view === 'theme') {
       const filtered = books.filter(b => b.book_type === 'theme');
       const total = filtered.length;
-      const grps = {};
-      filtered.forEach(b => {
-        const k = (b.title||'').toLowerCase()+'_'+(b.year||'');
-        if(!grps[k])grps[k]=0; grps[k]++;
-      });
-      const unique = Object.keys(grps).length;
-      const dupli = total - unique;
+      const ownedTitles = new Set(filtered.map(b => (b.title||'').trim().toLowerCase()));
+      const dupli = total - ownedTitles.size;
+      const missing = THEME_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase())).length;
       let txt = `${total} BØGER`;
       if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      txt += ` · ${missing} MANGLER`;
       el.textContent = txt;
 
     } else if (view === 'other') {
@@ -1235,7 +1317,12 @@
     } else if (view === 'dstore') {
       const filtered = books.filter(b => b.book_type === 'dstore');
       const total = filtered.length;
+      const ownedTitles = new Set(filtered.map(b => (b.title||'').trim().toLowerCase()));
+      const dupli = total - ownedTitles.size;
+      const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase())).length;
       let txt = total + ' BØGER';
+      if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      txt += ` · ${missing} MANGLER`;
       el.textContent = txt;
     } else {
       if (el) el.textContent = localStorage.getItem('appSubtitle') || '';
@@ -1838,6 +1925,22 @@
       return;
     }
 
+    if (filter === 'missing' && type === 'dstore') {
+      if (infoEl) infoEl.textContent = 'MANGLER';
+      const dstoreGrid = document.getElementById('dstoreGrid');
+      if (dstoreGrid) dstoreGrid.innerHTML = '';
+      renderDstoreMissing();
+      return;
+    }
+
+    if (filter === 'missing' && type === 'theme') {
+      if (infoEl) infoEl.textContent = 'MANGLER';
+      const themeGrid = document.getElementById('themeGrid');
+      if (themeGrid) themeGrid.innerHTML = '';
+      renderThemeMissing();
+      return;
+    }
+
     if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
     if (type === 'pocket' || type === 'theme' || type === 'dstore') {
@@ -1928,6 +2031,52 @@
     for (const n of missing) {
       html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">' +
         'Mammutbog #' + n + ' (' + (MAMMUT_YEARS[n]||'') + ')</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  function renderDstoreMissing() {
+    const el = document.getElementById('dstoreMissingGrid');
+    const ownedTitles = new Set(
+      books.filter(b => b.book_type === 'dstore').map(b => (b.title||'').trim().toLowerCase())
+    );
+    const missing = DSTORE_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase()));
+    if (!missing.length) {
+      el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle Den Store bøger!</div>';
+      return;
+    }
+    let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+      '<span style="color:var(--muted);font-size:11px;">' + missing.length + ' MANGLENDE BØGER</span>' +
+      '<button onclick="copyMissingList(\'dstore\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+      '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for (const item of missing) {
+      html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">' +
+        item.title + ' <span style="color:var(--muted);font-weight:400;">(' + item.year + ')</span></div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
+  function renderThemeMissing() {
+    const el = document.getElementById('themeMissingGrid');
+    const ownedTitles = new Set(
+      books.filter(b => b.book_type === 'theme').map(b => (b.title||'').trim().toLowerCase())
+    );
+    const missing = THEME_CATALOG.filter(item => !ownedTitles.has(item.title.toLowerCase()));
+    if (!missing.length) {
+      el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle Temabøger!</div>';
+      return;
+    }
+    let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+      '<span style="color:var(--muted);font-size:11px;">' + missing.length + ' MANGLENDE BØGER</span>' +
+      '<button onclick="copyMissingList(\'theme\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+      '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for (const item of missing) {
+      html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">' +
+        item.title + ' <span style="color:var(--muted);font-weight:400;">(' + item.year + ')</span></div>';
     }
     html += '</div>';
     el.innerHTML = html;
@@ -2457,6 +2606,24 @@
       const total = Object.keys(MAMMUT_TITLES).length;
       for (let n = 1; n <= total; n++) {
         if (!owned.has(n)) lines.push('Mammutbog #' + n + ' (' + (MAMMUT_YEARS[n]||'') + ') — MANGLER');
+      }
+    } else if (type === 'dstore') {
+      const ownedTitles = new Set(
+        books.filter(b => b.book_type === 'dstore').map(b => (b.title||'').trim().toLowerCase())
+      );
+      for (const item of DSTORE_CATALOG) {
+        if (!ownedTitles.has(item.title.toLowerCase())) {
+          lines.push(item.title + ' (' + item.year + ') — MANGLER');
+        }
+      }
+    } else if (type === 'theme') {
+      const ownedTitles = new Set(
+        books.filter(b => b.book_type === 'theme').map(b => (b.title||'').trim().toLowerCase())
+      );
+      for (const item of THEME_CATALOG) {
+        if (!ownedTitles.has(item.title.toLowerCase())) {
+          lines.push(item.title + ' (' + item.year + ') — MANGLER');
+        }
       }
     }
 
