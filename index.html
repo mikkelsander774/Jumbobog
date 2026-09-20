@@ -2483,7 +2483,7 @@
     let updated = 0, skipped = 0;
     try {
       // Process in batches of 50
-      const booksToUpdate = books.filter(b => getTitle(b.number));
+      const booksToUpdate = books.filter(b => b.book_type === 'jumbo' && getTitle(b.number));
       for (let i = 0; i < booksToUpdate.length; i += 50) {
         const batch = booksToUpdate.slice(i, i+50);
         for (const b of batch) {
