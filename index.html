@@ -1897,52 +1897,6 @@
     }
 
     if (!html) {
-      el.innerHTML = '<div class="empty-msg" style="color:var(--green)">✓ Du har alle bøger i denne serie!</div>';
-    } else {
-      el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
-        '<span style="color:var(--muted);font-size:11px;">' + totalMissing + ' MANGLENDE BØGER</span>' +
-        '<button onclick="copyMissingList(\'pocket\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
-        '</div>' + html;
-    }
-  }
-
-  function renderPocketMissing() {
-    const el = document.getElementById('pocketMissingGrid');
-    const catalog = POCKET_CATALOG[activePocketSeries];
-    const SERIES_LABELS = {onkel_joakim:'Onkel Joakim', mickey_mouse:'Mickey Mouse', bjoerne_banden:'Bjørne Banden'};
-    const serieLabel = SERIES_LABELS[activePocketSeries] || activePocketSeries;
-
-    if (!catalog) {
-      el.innerHTML = '<div class="empty-msg">Ingen kataloginformation tilgængelig for denne serie.</div>';
-      return;
-    }
-
-    // Find hvad man har
-    const owned = {};
-    books.filter(b => (b.book_type||'jumbo') === 'pocket' && (b.pocket_series||'onkel_joakim') === activePocketSeries)
-      .forEach(b => {
-        const k = (b.year||'') + '_' + (b.number||'');
-        owned[k] = true;
-      });
-
-    // Find manglende per årstal
-    const years = Object.keys(catalog).map(Number).sort((a,b) => a-b);
-    let totalMissing = 0;
-    let html = '';
-    for (const yr of years) {
-      const missing = catalog[yr].filter(n => !owned[yr + '_' + n]);
-      if (!missing.length) continue;
-      totalMissing += missing.length;
-      html += '<div style="margin-top:16px;">';
-      html += '<div style="color:var(--gold);font-size:11px;font-weight:700;letter-spacing:2px;border-bottom:1px solid #333;padding-bottom:4px;margin-bottom:8px;">' + yr + '</div>';
-      html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-      for (const n of missing) {
-        html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">#' + n + '</div>';
-      }
-      html += '</div></div>';
-    }
-
-    if (!html) {
       el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle bøger i denne serie!</div>';
     } else {
       el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
