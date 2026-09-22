@@ -1908,36 +1908,23 @@
     } else if (type === 'other') {
       for (const b of typeBooks) {
         const titleKey = (b.title || '').trim().toLowerCase();
-        const numKey = b.number != null ? String(b.number) : '';
+        const numKey = (b.number != null && b.number !== 0) ? String(b.number) : '';
         const yearKey = (b.year || '').trim();
         let key;
-        if (titleKey) {
-          // Har titel: grupper på titel alene (case-insensitivt)
+        if (titleKey && numKey) {
+          // Har titel OG nummer: grupper på titel+nummer (dubletter kun hvis begge ens)
+          key = 'ot_' + titleKey + '_nr' + numKey;
+        } else if (titleKey && yearKey) {
+          // Har titel og årstal men ikke nummer: grupper på titel+årstal
+          key = 'oty_' + titleKey + '_' + yearKey;
+        } else if (titleKey) {
+          // Kun titel: grupper på titel
           key = 'ot_' + titleKey;
         } else if (numKey && yearKey) {
-          // Intet titel men har nummer+årstal: grupper på begge
+          // Intet titel men har nummer+årstal
           key = 'on_' + numKey + '_' + yearKey;
         } else {
           // Ellers: vis individuelt
-          key = 'oid_' + b.id;
-        }
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(b);
-      }
-      for (const k of Object.keys(groups)) {
-        groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
-      }
-    } else if (type === 'other') {
-      for (const b of typeBooks) {
-        const titleKey = (b.title || '').trim().toLowerCase();
-        const numKey = b.number != null ? String(b.number) : '';
-        const yearKey = (b.year || '').trim();
-        let key;
-        if (titleKey) {
-          key = 'ot_' + titleKey;
-        } else if (numKey && yearKey) {
-          key = 'on_' + numKey + '_' + yearKey;
-        } else {
           key = 'oid_' + b.id;
         }
         if (!groups[key]) groups[key] = [];
