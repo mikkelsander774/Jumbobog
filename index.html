@@ -2007,8 +2007,8 @@
 
     if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
-    if (type === 'pocket' || type === 'theme' || type === 'dstore') {
-      // Lomme-anden, Temabøger og Den Store: gruppér efter årstal med overskrifter
+    if (type === 'pocket' || type === 'theme' || type === 'dstore' || type === 'other') {
+      // Lomme-anden, Temabøger, Den Store og Øvrige: gruppér efter årstal med overskrifter
       renderByYear(type, groups, keys);
     } else {
       const gridEl = document.getElementById(type+'Grid');
