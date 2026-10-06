@@ -340,6 +340,7 @@
     <button class="tab" onclick="switchView('theme',this)">🎨 TEMABØGER</button>
     <button class="tab" onclick="switchView('other',this)">📖 ØVRIGE</button>
     <button class="tab" onclick="switchView('dstore',this)">📕 DEN STORE</button>
+    <button class="tab" onclick="switchView('annual',this)">📅 ÅRGANGSBØGER</button>
     <button class="tab" onclick="switchView('tools',this)">⚙ INDSTILLINGER</button>
   </div>
 </header>
@@ -447,6 +448,7 @@
           <button class="filter-btn" id="qtype-mammut" onclick="setQuickType('mammut',this)">MAMMUTBOG</button>
           <button class="filter-btn" id="qtype-other" onclick="setQuickType('other',this)">ØVRIG</button>
           <button class="filter-btn" id="qtype-dstore" onclick="setQuickType('dstore',this)">DEN STORE</button>
+          <button class="filter-btn" id="qtype-annual" onclick="setQuickType('annual',this)">ÅRGANGSBOG</button>
         </div>
         <div class="num-row">
           <div class="field" style="flex:1;">
@@ -487,6 +489,7 @@
             <button class="filter-btn" id="type-mammut" onclick="setAddType('mammut',this)">MAMMUTBOG</button>
             <button class="filter-btn" id="type-other" onclick="setAddType('other',this)">ØVRIG</button>
             <button class="filter-btn" id="type-dstore" onclick="setAddType('dstore',this)">DEN STORE</button>
+            <button class="filter-btn" id="type-annual" onclick="setAddType('annual',this)">ÅRGANGSBOG</button>
           </div>
         </div>
 
@@ -575,6 +578,19 @@
       <div class="collection-info"><span id="dstoreInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
       <div id="dstoreGrid"></div>
       <div id="dstoreMissingGrid"></div>
+    </div>
+  </div>
+
+  <!-- ÅRGANGSBØGER -->
+  <div class="view" id="view-annual">
+    <div style="margin-top:16px;">
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setTypeFilter('annual','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('annual','replace',this)">UDSKIFT</button>
+        <button class="filter-btn" onclick="setTypeFilter('annual','incomplete',this)">MANGLER BILLEDER</button>
+      </div>
+      <div class="collection-info"><span id="annualInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
+      <div id="annualGrid"></div>
     </div>
   </div>
 
@@ -691,6 +707,7 @@
           <button class="filter-btn" id="et-theme"  onclick="setEditType('theme',this)">TEMABOG</button>
           <button class="filter-btn" id="et-other"  onclick="setEditType('other',this)">ØVRIG</button>
           <button class="filter-btn" id="et-dstore" onclick="setEditType('dstore',this)">DEN STORE</button>
+          <button class="filter-btn" id="et-annual" onclick="setEditType('annual',this)">ÅRGANGSBOG</button>
         </div>
       </div>
       <div class="field" id="editSeriesField" style="display:none;">
@@ -841,6 +858,70 @@
       .replace(/^den store\s+/,'')
       .replace(/^365 dage med\s+/,'');
   }
+
+
+  // ── ÅRGANGSBØGER KATALOG (Anders And - Den Komplette Årgang, 59 bind) ──────
+  const ANNUAL_CATALOG = [
+    {id:"1949",   label:"Den Komplette Årgang 1949"},
+    {id:"1950",   label:"Den Komplette Årgang 1950"},
+    {id:"1951-1", label:"Den Komplette Årgang 1951-1"},
+    {id:"1951-2", label:"Den Komplette Årgang 1951-2"},
+    {id:"1952-1", label:"Den Komplette Årgang 1952-1"},
+    {id:"1952-2", label:"Den Komplette Årgang 1952-2"},
+    {id:"1953-1", label:"Den Komplette Årgang 1953-1"},
+    {id:"1953-2", label:"Den Komplette Årgang 1953-2"},
+    {id:"1954-1", label:"Den Komplette Årgang 1954-1"},
+    {id:"1954-2", label:"Den Komplette Årgang 1954-2"},
+    {id:"1954-3", label:"Den Komplette Årgang 1954-3"},
+    {id:"1955-1", label:"Den Komplette Årgang 1955-1"},
+    {id:"1955-2", label:"Den Komplette Årgang 1955-2"},
+    {id:"1955-3", label:"Den Komplette Årgang 1955-3"},
+    {id:"1956-1", label:"Den Komplette Årgang 1956-1"},
+    {id:"1956-2", label:"Den Komplette Årgang 1956-2"},
+    {id:"1956-3", label:"Den Komplette Årgang 1956-3"},
+    {id:"1957-1", label:"Den Komplette Årgang 1957-1"},
+    {id:"1957-2", label:"Den Komplette Årgang 1957-2"},
+    {id:"1957-3", label:"Den Komplette Årgang 1957-3"},
+    {id:"1958-1", label:"Den Komplette Årgang 1958-1"},
+    {id:"1958-2", label:"Den Komplette Årgang 1958-2"},
+    {id:"1958-3", label:"Den Komplette Årgang 1958-3"},
+    {id:"1959-1", label:"Den Komplette Årgang 1959-1"},
+    {id:"1959-2", label:"Den Komplette Årgang 1959-2"},
+    {id:"1959-3", label:"Den Komplette Årgang 1959-3"},
+    {id:"1959-4", label:"Den Komplette Årgang 1959-4"},
+    {id:"1959-5", label:"Den Komplette Årgang 1959-5"},
+    {id:"1959-6", label:"Den Komplette Årgang 1959-6"},
+    {id:"1960-1", label:"Den Komplette Årgang 1960-1"},
+    {id:"1960-2", label:"Den Komplette Årgang 1960-2"},
+    {id:"1960-3", label:"Den Komplette Årgang 1960-3"},
+    {id:"1960-4", label:"Den Komplette Årgang 1960-4"},
+    {id:"1960-5", label:"Den Komplette Årgang 1960-5"},
+    {id:"1960-6", label:"Den Komplette Årgang 1960-6"},
+    {id:"1961-1", label:"Den Komplette Årgang 1961-1"},
+    {id:"1961-2", label:"Den Komplette Årgang 1961-2"},
+    {id:"1961-3", label:"Den Komplette Årgang 1961-3"},
+    {id:"1961-4", label:"Den Komplette Årgang 1961-4"},
+    {id:"1961-5", label:"Den Komplette Årgang 1961-5"},
+    {id:"1961-6", label:"Den Komplette Årgang 1961-6"},
+    {id:"1962-1", label:"Den Komplette Årgang 1962-1"},
+    {id:"1962-2", label:"Den Komplette Årgang 1962-2"},
+    {id:"1962-3", label:"Den Komplette Årgang 1962-3"},
+    {id:"1962-4", label:"Den Komplette Årgang 1962-4"},
+    {id:"1962-5", label:"Den Komplette Årgang 1962-5"},
+    {id:"1962-6", label:"Den Komplette Årgang 1962-6"},
+    {id:"1963-1", label:"Den Komplette Årgang 1963-1"},
+    {id:"1963-2", label:"Den Komplette Årgang 1963-2"},
+    {id:"1963-3", label:"Den Komplette Årgang 1963-3"},
+    {id:"1963-4", label:"Den Komplette Årgang 1963-4"},
+    {id:"1963-5", label:"Den Komplette Årgang 1963-5"},
+    {id:"1963-6", label:"Den Komplette Årgang 1963-6"},
+    {id:"1964-1", label:"Den Komplette Årgang 1964-1"},
+    {id:"1964-2", label:"Den Komplette Årgang 1964-2"},
+    {id:"1964-3", label:"Den Komplette Årgang 1964-3"},
+    {id:"1964-4", label:"Den Komplette Årgang 1964-4"},
+    {id:"1964-5", label:"Den Komplette Årgang 1964-5"},
+    {id:"1964-6", label:"Den Komplette Årgang 1964-6"}
+  ];
 
   // ── DEN STORE KATALOG (22 bind, 1974–2009) ─────────────────
   const DSTORE_CATALOG = [
@@ -1309,7 +1390,7 @@
     renderCollection();
     // Migrer: pocket-bøger uden pocket_series får onkel_joakim som default i hukommelsen
     books.forEach(b => { if (b.book_type === 'pocket' && !b.pocket_series) b.pocket_series = 'onkel_joakim'; });
-    ['theme','pocket','mammut','other','dstore'].forEach(t => renderType(t));
+    ['theme','pocket','mammut','other','dstore','annual'].forEach(t => renderType(t));
   }
 
   function updateCount() {
@@ -1393,6 +1474,14 @@
       if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
       txt += ` · ${missing} MANGLER`;
       el.textContent = txt;
+    } else if (view === 'annual') {
+      const filtered = books.filter(b => b.book_type === 'annual');
+      const total = filtered.length;
+      const owned = new Set(filtered.map(b => (b.title||'').trim().toLowerCase()));
+      const dupli = total - owned.size;
+      const catalogTotal = ANNUAL_CATALOG.length;
+      const txt = `${total} BØGER · ${catalogTotal} I SERIEN`;
+      el.textContent = txt;
     } else {
       if (el) el.textContent = localStorage.getItem('appSubtitle') || '';
     }
@@ -1408,8 +1497,9 @@
     currentView = name;
     updateBookCountForView(name);
     if (name==='collection') renderCollection();
-    if (['theme','pocket','mammut','other','dstore'].includes(name)) renderType(name);
+    if (['theme','pocket','mammut','other','dstore','annual'].includes(name)) renderType(name);
     if (name==='tools') updateCatalogStatus();
+    if (name==='annual') updateBookCountForView('annual');
   }
 
   function updateCatalogStatus() {
@@ -1711,12 +1801,12 @@
     document.querySelectorAll('[id^="qtype-"]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('quickSeriesField').style.display = type === 'pocket' ? '' : 'none';
-    document.getElementById('quickTitleField').style.display = (type === 'theme' || type === 'other' || type === 'dstore') ? '' : 'none';
+    document.getElementById('quickTitleField').style.display = (type === 'theme' || type === 'other' || type === 'dstore' || type === 'annual') ? '' : 'none';
     const titleInput = document.getElementById('quickTitle');
-    titleInput.placeholder = type === 'other' ? 'Titel (valgfrit)' : 'Bogens titel *';
+    titleInput.placeholder = type === 'other' ? 'Titel (valgfrit)' : (type === 'annual' ? 'f.eks. Den Komplette Årgang 1959-3' : 'Bogens titel *');
     const numField = document.getElementById('quickNumber');
-    numField.style.display = type === 'dstore' ? 'none' : '';
-    numField.placeholder = type === 'other' ? 'Bognummer (valgfrit)' : 'f.eks. 42';
+    numField.style.display = (type === 'dstore' || type === 'annual') ? 'none' : '';
+    numField.placeholder = type === 'other' ? 'Bognummer (valgfrit)' : (type === 'annual' ? 'Ikke relevant' : 'f.eks. 42');
   }
   function changeEditCount(d) { editCount=Math.max(1,editCount+d); document.getElementById('editCountVal').textContent=editCount; }
 
@@ -1784,7 +1874,8 @@
     const isTheme = quickType === 'theme';
     const isOther = quickType === 'other';
     const isDstore = quickType === 'dstore';
-    const manualTitle = (isTheme || isOther || isDstore) ? document.getElementById('quickTitle').value.trim() : null;
+    const isAnnual = quickType === 'annual';
+    const manualTitle = (isTheme || isOther || isDstore || isAnnual) ? document.getElementById('quickTitle').value.trim() : null;
     if (!isOther && !isDstore && !num) { showMsg('Indtast et bognummer!','err'); return; }
     if (quickType === 'pocket' && !quickPocketSeries) { showMsg('Vælg en serie!','err'); return; }
     if (isOther && !num && !manualTitle) { showMsg('Indtast enten et bognummer eller en titel!','err'); return; }
@@ -1809,6 +1900,7 @@
     const isTheme = addType === 'theme';
     const isOther = addType === 'other';
     const isDstore = addType === 'dstore';
+    const isAnnual = addType === 'annual';
     const num = (isTheme || isDstore) ? null : document.getElementById('addNumber').value.trim();
     const manualTitle = (isTheme || isOther || isDstore) ? document.getElementById('addTitle').value.trim() : null;
     const title = (isTheme || isOther || isDstore) ? (manualTitle || '') : getTitle(Number(num));
@@ -1873,7 +1965,7 @@
   }
 
   // ── TYPE FILTERS ──────────────────────────────────────────
-  const typeFilters = { theme:'all', pocket:'all', mammut:'all', other:'all', dstore:'all' };
+  const typeFilters = { theme:'all', pocket:'all', mammut:'all', other:'all', dstore:'all', annual:'all' };
 
   function setTypeFilter(type, filter, btn) {
     typeFilters[type] = filter;
@@ -1929,6 +2021,17 @@
         }
         if (!groups[key]) groups[key] = [];
         groups[key].push(b);
+      }
+      for (const k of Object.keys(groups)) {
+        groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
+      }
+    } else if (type === 'annual') {
+      // Årgangsbøger: grupper på titel (id) alene — dubletter hvis samme bind
+      for (const b of typeBooks) {
+        const key = (b.title || '').trim().toLowerCase();
+        const k = key ? ('an_' + key) : ('anid_' + b.id);
+        if (!groups[k]) groups[k] = [];
+        groups[k].push(b);
       }
       for (const k of Object.keys(groups)) {
         groups[k].sort((a, b) => (b.condition||0) - (a.condition||0));
@@ -2007,7 +2110,7 @@
 
     if (infoEl) infoEl.textContent = keys.length + ' BØGER VISES';
 
-    if (type === 'pocket' || type === 'theme' || type === 'dstore' || type === 'other') {
+    if (type === 'pocket' || type === 'theme' || type === 'dstore' || type === 'other' || type === 'annual') {
       // Lomme-anden, Temabøger, Den Store og Øvrige: gruppér efter årstal med overskrifter
       renderByYear(type, groups, keys);
     } else {
@@ -2228,6 +2331,10 @@
       const serieLabel = POCKET_SERIES_LABELS[b.pocket_series || 'onkel_joakim'] || 'Lomme-anden';
       topHtml = b.number != null ? `<div class="book-number">${serieLabel} nr. ${b.number}</div>` : `<div class="book-number">${serieLabel}</div>`;
       midHtml = '';
+    } else if (b.book_type === 'annual') {
+      // Årgangsbog: vis bindets id (fx "1959-3") som hovednummer, fuld titel nedenunder
+      topHtml = `<div class="book-number">${b.title || 'Årgangsbog'}</div>`;
+      midHtml = '';
     } else if (b.book_type === 'dstore') {
       // Den Store: kun titel og årstal, intet nummer
       topHtml = `<div class="book-number">${b.title || 'Den Store'}</div>`;
@@ -2310,7 +2417,7 @@
     if (activeView) {
       const type = activeView.id.replace('view-','');
       if (type === 'collection') renderCollection();
-      else if (['theme','pocket','mammut','other','dstore'].includes(type)) renderType(type);
+      else if (['theme','pocket','mammut','other','dstore','annual'].includes(type)) renderType(type);
     }
     await sb.from('books').update({ is_read: newVal }).eq('id', id);
   }
@@ -2420,7 +2527,7 @@
     const activeView = document.querySelector('.view.active');
     const type = activeView ? activeView.id.replace('view-','') : 'collection';
     if (type === 'collection') renderCollection();
-    else if (['theme','pocket','mammut','other','dstore'].includes(type)) renderType(type);
+    else if (['theme','pocket','mammut','other','dstore','annual'].includes(type)) renderType(type);
   }
 
   function deleteBookLabel(b) {
@@ -2468,7 +2575,7 @@
     const esBtn = document.getElementById('es-' + editPocketSeries);
     if (esBtn) esBtn.classList.add('active');
     // Titel
-    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
+    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore' || editBookType === 'annual';
     document.getElementById('editTitleField').style.display = showTitle ? '' : 'none';
     if (showTitle) document.getElementById('editTitle').value = b.title || '';
     document.getElementById('editYear').value=b.year||'';
@@ -2525,7 +2632,7 @@
     // Serie-felt: kun synligt for pocket
     document.getElementById('editSeriesField').style.display = editBookType === 'pocket' ? '' : 'none';
     // Titel-felt: synligt for theme, other, dstore
-    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
+    const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore' || editBookType === 'annual';
     document.getElementById('editTitleField').style.display = showTitle ? '' : 'none';
   }
 
@@ -2573,7 +2680,7 @@
         setProgress('edit', done/3*100, done===3?'GEMMER...':'UPLOADER...');
       }
 
-      const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore';
+      const showTitle = editBookType === 'theme' || editBookType === 'other' || editBookType === 'dstore' || editBookType === 'annual';
       const editedTitle = showTitle
         ? document.getElementById('editTitle').value.trim()
         : (editBookType === 'jumbo' ? getTitle(b.number) : b.title || '');
@@ -2748,7 +2855,7 @@
 
 
 
-  const TYPE_LABELS = { jumbo:'Jumbobog', pocket:'Lomme-anden', mammut:'Mammutbog', theme:'Temabog', other:'Øvrig', dstore:'Den Store' };
+  const TYPE_LABELS = { jumbo:'Jumbobog', pocket:'Lomme-anden', mammut:'Mammutbog', theme:'Temabog', other:'Øvrig', dstore:'Den Store', annual:'Årgangsbog' };
 
   function showTypeConflicts() {
     const el = document.getElementById('typeConflictList');
