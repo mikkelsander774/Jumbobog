@@ -338,9 +338,9 @@
     <button class="tab" onclick="switchView('pocket',this)">🦆 LOMME-ANDEN</button>
     <button class="tab" onclick="switchView('mammut',this)">🐘 MAMMUTBØGER</button>
     <button class="tab" onclick="switchView('theme',this)">🎨 TEMABØGER</button>
-    <button class="tab" onclick="switchView('other',this)">📖 ØVRIGE</button>
     <button class="tab" onclick="switchView('dstore',this)">📕 DEN STORE</button>
     <button class="tab" onclick="switchView('annual',this)">📅 ÅRGANGSBØGER</button>
+    <button class="tab" onclick="switchView('other',this)">📖 ØVRIGE</button>
     <button class="tab" onclick="switchView('tools',this)">⚙ INDSTILLINGER</button>
   </div>
 </header>
@@ -586,11 +586,13 @@
     <div style="margin-top:16px;">
       <div class="filter-row">
         <button class="filter-btn active" onclick="setTypeFilter('annual','all',this)">ALLE</button>
+        <button class="filter-btn" onclick="setTypeFilter('annual','missing',this)">MANGLER</button>
         <button class="filter-btn" onclick="setTypeFilter('annual','replace',this)">UDSKIFT</button>
         <button class="filter-btn" onclick="setTypeFilter('annual','incomplete',this)">MANGLER BILLEDER</button>
       </div>
       <div class="collection-info"><span id="annualInfo">INDLÆSER...</span><button class="refresh-btn" onclick="loadBooks(true)">↻</button></div>
       <div id="annualGrid"></div>
+      <div id="annualMissingGrid"></div>
     </div>
   </div>
 
@@ -862,65 +864,65 @@
 
   // ── ÅRGANGSBØGER KATALOG (Anders And - Den Komplette Årgang, 59 bind) ──────
   const ANNUAL_CATALOG = [
-    {id:"1949",   label:"Den Komplette Årgang 1949"},
-    {id:"1950",   label:"Den Komplette Årgang 1950"},
-    {id:"1951-1", label:"Den Komplette Årgang 1951-1"},
-    {id:"1951-2", label:"Den Komplette Årgang 1951-2"},
-    {id:"1952-1", label:"Den Komplette Årgang 1952-1"},
-    {id:"1952-2", label:"Den Komplette Årgang 1952-2"},
-    {id:"1953-1", label:"Den Komplette Årgang 1953-1"},
-    {id:"1953-2", label:"Den Komplette Årgang 1953-2"},
-    {id:"1954-1", label:"Den Komplette Årgang 1954-1"},
-    {id:"1954-2", label:"Den Komplette Årgang 1954-2"},
-    {id:"1954-3", label:"Den Komplette Årgang 1954-3"},
-    {id:"1955-1", label:"Den Komplette Årgang 1955-1"},
-    {id:"1955-2", label:"Den Komplette Årgang 1955-2"},
-    {id:"1955-3", label:"Den Komplette Årgang 1955-3"},
-    {id:"1956-1", label:"Den Komplette Årgang 1956-1"},
-    {id:"1956-2", label:"Den Komplette Årgang 1956-2"},
-    {id:"1956-3", label:"Den Komplette Årgang 1956-3"},
-    {id:"1957-1", label:"Den Komplette Årgang 1957-1"},
-    {id:"1957-2", label:"Den Komplette Årgang 1957-2"},
-    {id:"1957-3", label:"Den Komplette Årgang 1957-3"},
-    {id:"1958-1", label:"Den Komplette Årgang 1958-1"},
-    {id:"1958-2", label:"Den Komplette Årgang 1958-2"},
-    {id:"1958-3", label:"Den Komplette Årgang 1958-3"},
-    {id:"1959-1", label:"Den Komplette Årgang 1959-1"},
-    {id:"1959-2", label:"Den Komplette Årgang 1959-2"},
-    {id:"1959-3", label:"Den Komplette Årgang 1959-3"},
-    {id:"1959-4", label:"Den Komplette Årgang 1959-4"},
-    {id:"1959-5", label:"Den Komplette Årgang 1959-5"},
-    {id:"1959-6", label:"Den Komplette Årgang 1959-6"},
-    {id:"1960-1", label:"Den Komplette Årgang 1960-1"},
-    {id:"1960-2", label:"Den Komplette Årgang 1960-2"},
-    {id:"1960-3", label:"Den Komplette Årgang 1960-3"},
-    {id:"1960-4", label:"Den Komplette Årgang 1960-4"},
-    {id:"1960-5", label:"Den Komplette Årgang 1960-5"},
-    {id:"1960-6", label:"Den Komplette Årgang 1960-6"},
-    {id:"1961-1", label:"Den Komplette Årgang 1961-1"},
-    {id:"1961-2", label:"Den Komplette Årgang 1961-2"},
-    {id:"1961-3", label:"Den Komplette Årgang 1961-3"},
-    {id:"1961-4", label:"Den Komplette Årgang 1961-4"},
-    {id:"1961-5", label:"Den Komplette Årgang 1961-5"},
-    {id:"1961-6", label:"Den Komplette Årgang 1961-6"},
-    {id:"1962-1", label:"Den Komplette Årgang 1962-1"},
-    {id:"1962-2", label:"Den Komplette Årgang 1962-2"},
-    {id:"1962-3", label:"Den Komplette Årgang 1962-3"},
-    {id:"1962-4", label:"Den Komplette Årgang 1962-4"},
-    {id:"1962-5", label:"Den Komplette Årgang 1962-5"},
-    {id:"1962-6", label:"Den Komplette Årgang 1962-6"},
-    {id:"1963-1", label:"Den Komplette Årgang 1963-1"},
-    {id:"1963-2", label:"Den Komplette Årgang 1963-2"},
-    {id:"1963-3", label:"Den Komplette Årgang 1963-3"},
-    {id:"1963-4", label:"Den Komplette Årgang 1963-4"},
-    {id:"1963-5", label:"Den Komplette Årgang 1963-5"},
-    {id:"1963-6", label:"Den Komplette Årgang 1963-6"},
-    {id:"1964-1", label:"Den Komplette Årgang 1964-1"},
-    {id:"1964-2", label:"Den Komplette Årgang 1964-2"},
-    {id:"1964-3", label:"Den Komplette Årgang 1964-3"},
-    {id:"1964-4", label:"Den Komplette Årgang 1964-4"},
-    {id:"1964-5", label:"Den Komplette Årgang 1964-5"},
-    {id:"1964-6", label:"Den Komplette Årgang 1964-6"}
+    {id:"1949", pub:1999, label:"Den Komplette Årgang 1949"},
+    {id:"1950", pub:1999, label:"Den Komplette Årgang 1950"},
+    {id:"1951-1", pub:2000, label:"Den Komplette Årgang 1951-1"},
+    {id:"1951-2", pub:2000, label:"Den Komplette Årgang 1951-2"},
+    {id:"1952-1", pub:2001, label:"Den Komplette Årgang 1952-1"},
+    {id:"1952-2", pub:2002, label:"Den Komplette Årgang 1952-2"},
+    {id:"1953-1", pub:2001, label:"Den Komplette Årgang 1953-1"},
+    {id:"1953-2", pub:2001, label:"Den Komplette Årgang 1953-2"},
+    {id:"1954-1", pub:2001, label:"Den Komplette Årgang 1954-1"},
+    {id:"1954-2", pub:2001, label:"Den Komplette Årgang 1954-2"},
+    {id:"1954-3", pub:2002, label:"Den Komplette Årgang 1954-3"},
+    {id:"1955-1", pub:2002, label:"Den Komplette Årgang 1955-1"},
+    {id:"1955-2", pub:2002, label:"Den Komplette Årgang 1955-2"},
+    {id:"1955-3", pub:2002, label:"Den Komplette Årgang 1955-3"},
+    {id:"1956-1", pub:2003, label:"Den Komplette Årgang 1956-1"},
+    {id:"1956-2", pub:2003, label:"Den Komplette Årgang 1956-2"},
+    {id:"1956-3", pub:2003, label:"Den Komplette Årgang 1956-3"},
+    {id:"1957-1", pub:2003, label:"Den Komplette Årgang 1957-1"},
+    {id:"1957-2", pub:2003, label:"Den Komplette Årgang 1957-2"},
+    {id:"1957-3", pub:2004, label:"Den Komplette Årgang 1957-3"},
+    {id:"1958-1", pub:1999, label:"Den Komplette Årgang 1958-1"},
+    {id:"1958-2", pub:1999, label:"Den Komplette Årgang 1958-2"},
+    {id:"1958-3", pub:2004, label:"Den Komplette Årgang 1958-3"},
+    {id:"1959-1", pub:2004, label:"Den Komplette Årgang 1959-1"},
+    {id:"1959-2", pub:2005, label:"Den Komplette Årgang 1959-2"},
+    {id:"1959-3", pub:2005, label:"Den Komplette Årgang 1959-3"},
+    {id:"1959-4", pub:2005, label:"Den Komplette Årgang 1959-4"},
+    {id:"1959-5", pub:2005, label:"Den Komplette Årgang 1959-5"},
+    {id:"1959-6", pub:2005, label:"Den Komplette Årgang 1959-6"},
+    {id:"1960-1", pub:2006, label:"Den Komplette Årgang 1960-1"},
+    {id:"1960-2", pub:2006, label:"Den Komplette Årgang 1960-2"},
+    {id:"1960-3", pub:2006, label:"Den Komplette Årgang 1960-3"},
+    {id:"1960-4", pub:2006, label:"Den Komplette Årgang 1960-4"},
+    {id:"1960-5", pub:2006, label:"Den Komplette Årgang 1960-5"},
+    {id:"1960-6", pub:2006, label:"Den Komplette Årgang 1960-6"},
+    {id:"1961-1", pub:2007, label:"Den Komplette Årgang 1961-1"},
+    {id:"1961-2", pub:2007, label:"Den Komplette Årgang 1961-2"},
+    {id:"1961-3", pub:2007, label:"Den Komplette Årgang 1961-3"},
+    {id:"1961-4", pub:2007, label:"Den Komplette Årgang 1961-4"},
+    {id:"1961-5", pub:2007, label:"Den Komplette Årgang 1961-5"},
+    {id:"1961-6", pub:2007, label:"Den Komplette Årgang 1961-6"},
+    {id:"1962-1", pub:2008, label:"Den Komplette Årgang 1962-1"},
+    {id:"1962-2", pub:2008, label:"Den Komplette Årgang 1962-2"},
+    {id:"1962-3", pub:2008, label:"Den Komplette Årgang 1962-3"},
+    {id:"1962-4", pub:2008, label:"Den Komplette Årgang 1962-4"},
+    {id:"1962-5", pub:2008, label:"Den Komplette Årgang 1962-5"},
+    {id:"1962-6", pub:2008, label:"Den Komplette Årgang 1962-6"},
+    {id:"1963-1", pub:2009, label:"Den Komplette Årgang 1963-1"},
+    {id:"1963-2", pub:2009, label:"Den Komplette Årgang 1963-2"},
+    {id:"1963-3", pub:2009, label:"Den Komplette Årgang 1963-3"},
+    {id:"1963-4", pub:2009, label:"Den Komplette Årgang 1963-4"},
+    {id:"1963-5", pub:2009, label:"Den Komplette Årgang 1963-5"},
+    {id:"1963-6", pub:2009, label:"Den Komplette Årgang 1963-6"},
+    {id:"1964-1", pub:2009, label:"Den Komplette Årgang 1964-1"},
+    {id:"1964-2", pub:2009, label:"Den Komplette Årgang 1964-2"},
+    {id:"1964-3", pub:2009, label:"Den Komplette Årgang 1964-3"},
+    {id:"1964-4", pub:2009, label:"Den Komplette Årgang 1964-4"},
+    {id:"1964-5", pub:2009, label:"Den Komplette Årgang 1964-5"},
+    {id:"1964-6", pub:2009, label:"Den Komplette Årgang 1964-6"}
   ];
 
   // ── DEN STORE KATALOG (22 bind, 1974–2009) ─────────────────
@@ -1480,7 +1482,10 @@
       const owned = new Set(filtered.map(b => (b.title||'').trim().toLowerCase()));
       const dupli = total - owned.size;
       const catalogTotal = ANNUAL_CATALOG.length;
-      const txt = `${total} BØGER · ${catalogTotal} I SERIEN`;
+      const missingN = ANNUAL_CATALOG.filter(it => !owned.has(it.label.toLowerCase())).length;
+      let txt = `${total} BØGER · ${catalogTotal} I SERIEN`;
+      if (dupli > 0) txt += ` · ${dupli} DUBLETTER`;
+      txt += ` · ${missingN} MANGLER`;
       el.textContent = txt;
     } else {
       if (el) el.textContent = localStorage.getItem('appSubtitle') || '';
@@ -2100,6 +2105,14 @@
       return;
     }
 
+    if (filter === 'missing' && type === 'annual') {
+      if (infoEl) infoEl.textContent = 'MANGLER';
+      const annualGrid = document.getElementById('annualGrid');
+      if (annualGrid) annualGrid.innerHTML = '';
+      renderAnnualMissing();
+      return;
+    }
+
     if (filter === 'missing' && type === 'theme') {
       if (infoEl) infoEl.textContent = 'MANGLER';
       const themeGrid = document.getElementById('themeGrid');
@@ -2226,6 +2239,29 @@
     el.innerHTML = html;
   }
 
+  function renderAnnualMissing() {
+    const el = document.getElementById('annualMissingGrid');
+    const owned = new Set(
+      books.filter(b => b.book_type === 'annual').map(b => (b.title||'').trim().toLowerCase())
+    );
+    const missing = ANNUAL_CATALOG.filter(item => !owned.has(item.label.toLowerCase()));
+    if (!missing.length) {
+      el.innerHTML = '<div class="empty-msg" style="color:var(--green)">&#10003; Du har alle Årgangsbøgerne!</div>';
+      return;
+    }
+    let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+      '<span style="color:var(--muted);font-size:11px;">' + missing.length + ' MANGLENDE BØGER</span>' +
+      '<button onclick="copyMissingList(\'annual\')" style="background:transparent;border:1px solid #444;color:var(--muted);font-size:10px;font-family:monospace;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;">📋 KOPIÉR LISTE</button>' +
+      '</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    for (const item of missing) {
+      html += '<div style="background:var(--surface);border:1px solid var(--gold);border-radius:3px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--gold);font-family:monospace;">' +
+        item.label + ' <span style="color:var(--muted);font-weight:400;">(udg. ' + item.pub + ')</span></div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+  }
+
   function renderThemeMissing() {
     const el = document.getElementById('themeMissingGrid');
     const ownedTitles = new Set(
@@ -2332,9 +2368,9 @@
       topHtml = b.number != null ? `<div class="book-number">${serieLabel} nr. ${b.number}</div>` : `<div class="book-number">${serieLabel}</div>`;
       midHtml = '';
     } else if (b.book_type === 'annual') {
-      // Årgangsbog: vis bindets id (fx "1959-3") som hovednummer, fuld titel nedenunder
+      // Årgangsbog: vis titel som hovednummer, og Egmont udgivelsesår nedenunder
       topHtml = `<div class="book-number">${b.title || 'Årgangsbog'}</div>`;
-      midHtml = '';
+      midHtml = b.published_year ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">Udg. ${b.published_year}</div>` : '';
     } else if (b.book_type === 'dstore') {
       // Den Store: kun titel og årstal, intet nummer
       topHtml = `<div class="book-number">${b.title || 'Den Store'}</div>`;
@@ -2786,6 +2822,11 @@
         if (!ownedTitles.has(normalizeDstoreTitle(item.title))) {
           lines.push(item.title + ' (' + item.year + ') — MANGLER');
         }
+      }
+    } else if (type === 'annual') {
+      const owned = new Set(books.filter(b => b.book_type === 'annual').map(b => (b.title||'').trim().toLowerCase()));
+      for (const item of ANNUAL_CATALOG) {
+        if (!owned.has(item.label.toLowerCase())) lines.push(item.label + ' (udg. ' + item.pub + ') — MANGLER');
       }
     } else if (type === 'theme') {
       const ownedTitles = new Set(
